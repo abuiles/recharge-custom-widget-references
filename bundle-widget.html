@@ -1,0 +1,2726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Your Custom Food Bundle</title>
+    
+    <!-- Recharge SDK CDN -->
+    <script src="https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js"></script>
+    <!-- Shopify Storefront API Client CDN -->
+    <script src="https://unpkg.com/@shopify/storefront-api-client@1.0.9/dist/umd/storefront-api-client.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #6c757d;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e3f2fd;
+            border-top: 5px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        /* Main Widget Container */
+        .bundle-widget {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* Variant Selection Section */
+        .variant-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+
+        .variant-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .variant-selector {
+            position: relative;
+        }
+
+        .variant-selector select {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+        }
+
+        .variant-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
+
+        /* Bundle Info */
+        .bundle-info {
+            background: #e8f4fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 20px 30px;
+            border-radius: 8px;
+        }
+
+        .bundle-info h3 {
+            color: #1976d2;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .bundle-info .rules {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        /* Bundle Summary Sidebar */
+        .bundle-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .bundle-content {
+            min-height: 500px;
+        }
+
+        .bundle-summary {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            border: 2px solid #e9ecef;
+        }
+
+        .bundle-summary h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bundle-summary .summary-content {
+            margin-bottom: 20px;
+        }
+
+        .selected-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #28a745;
+        }
+
+        .selected-item .item-info {
+            flex: 1;
+        }
+
+        .selected-item .item-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .selected-item .item-quantity {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .selected-item .item-price {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .bundle-total {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #28a745;
+            margin-top: 15px;
+        }
+
+        .bundle-total .total-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .bundle-total .final-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #28a745;
+            border-top: 2px solid #e9ecef;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        /* Validation Messages */
+        .validation-messages {
+            margin: 15px 0;
+        }
+
+        .validation-error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .validation-success {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            color: #276749;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Add to Cart Button */
+        .add-to-cart-btn {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .add-to-cart-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40,167,69,0.3);
+        }
+
+        .add-to-cart-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Collection Navigation */
+        .collections-nav {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 0 5px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .collection-tab {
+            flex-shrink: 0;
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+
+        .collection-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+        }
+
+        .collection-tab:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .product-image-container {
+            position: relative;
+            overflow: hidden;
+            height: 200px;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image {
+            transform: scale(1.05);
+        }
+
+        /* Clickable product elements */
+        .product-image-container:hover {
+            cursor: pointer;
+        }
+
+        .product-image-container:hover::after {
+            content: '👁️ View Details';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .product-title:hover {
+            color: #667eea;
+            transition: color 0.2s ease;
+        }
+
+        .product-badges {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: calc(100% - 16px);
+        }
+
+        .product-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            line-height: 1.3;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-width: fit-content;
+        }
+
+        /* Badge animation on hover */
+        .product-card:hover .product-badge {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        /* Default badge colors for common types */
+        .product-badge.new {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+            color: white !important;
+        }
+
+        .product-badge.best-seller {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            color: white !important;
+        }
+
+        .product-badge.limited {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
+            color: white !important;
+        }
+
+        .product-badge.organic {
+            background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+            color: white !important;
+        }
+
+        .product-details {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .product-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+            min-height: 24px;
+        }
+
+        .pill {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pill.dietary {
+            background: rgba(39,174,96,0.1);
+            color: #27ae60;
+            border: 1px solid rgba(39,174,96,0.3);
+        }
+
+        .pill.allergen {
+            background: rgba(243,156,18,0.1);
+            color: #f39c12;
+            border: 1px solid rgba(243,156,18,0.3);
+        }
+
+        /* Specific dietary preference styles */
+        .pill.vegan {
+            background: rgba(76,175,80,0.1);
+            color: #4caf50;
+            border: 1px solid rgba(76,175,80,0.3);
+        }
+
+        .pill.vegetarian {
+            background: rgba(139,195,74,0.1);
+            color: #8bc34a;
+            border: 1px solid rgba(139,195,74,0.3);
+        }
+
+        .pill.gluten-free {
+            background: rgba(255,193,7,0.1);
+            color: #ffc107;
+            border: 1px solid rgba(255,193,7,0.3);
+        }
+
+        .pill.keto {
+            background: rgba(156,39,176,0.1);
+            color: #9c27b0;
+            border: 1px solid rgba(156,39,176,0.3);
+        }
+
+        .pill.paleo {
+            background: rgba(121,85,72,0.1);
+            color: #795548;
+            border: 1px solid rgba(121,85,72,0.3);
+        }
+
+        .pill.dairy-free {
+            background: rgba(33,150,243,0.1);
+            color: #2196f3;
+            border: 1px solid rgba(33,150,243,0.3);
+        }
+
+        /* Specific allergen styles */
+        .pill.contains-nuts {
+            background: rgba(244,67,54,0.1);
+            color: #f44336;
+            border: 1px solid rgba(244,67,54,0.3);
+        }
+
+        .pill.contains-dairy {
+            background: rgba(255,152,0,0.1);
+            color: #ff9800;
+            border: 1px solid rgba(255,152,0,0.3);
+        }
+
+        .pill.contains-eggs {
+            background: rgba(255,235,59,0.1);
+            color: #ffeb3b;
+            border: 1px solid rgba(255,235,59,0.3);
+        }
+
+        .pill.contains-soy {
+            background: rgba(205,220,57,0.1);
+            color: #cddc39;
+            border: 1px solid rgba(205,220,57,0.3);
+        }
+
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        /* Quantity Controls */
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .quantity-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover:not(:disabled) {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+
+        .quantity-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quantity-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .bundle-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .bundle-summary {
+                position: static;
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .variant-section {
+                padding: 20px;
+            }
+            
+            .bundle-layout {
+                padding: 20px;
+                gap: 20px;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 20px;
+            }
+            
+            .collections-nav {
+                margin-bottom: 20px;
+            }
+            
+            .collection-tab {
+                padding: 10px 18px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bundle-layout {
+                padding: 15px;
+            }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Collection Loading State */
+        .collection-loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .collection-loading .mini-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e3f2fd;
+            border-top: 3px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        /* Product Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .product-modal {
+            background: white;
+            border-radius: 20px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transform: scale(0.8) translateY(50px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active .product-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+            font-size: 20px;
+            color: #666;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: #333;
+            transform: scale(1.1);
+        }
+
+        .modal-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 500px;
+        }
+
+        .modal-images {
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-top-left-radius: 20px;
+            border-bottom-left-radius: 20px;
+            overflow: hidden;
+        }
+
+        .modal-main-image {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .modal-main-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-image-badges {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .modal-image-badges .product-badge {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        .modal-thumbnails {
+            display: flex;
+            gap: 10px;
+            padding: 0 30px 20px;
+            overflow-x: auto;
+        }
+
+        .modal-thumbnail {
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .modal-thumbnail.active {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .modal-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-details {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .modal-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .modal-pills-section {
+            margin-bottom: 25px;
+        }
+
+        .modal-pills-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .modal-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .modal-pills .pill {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        .modal-description {
+            margin-bottom: 30px;
+        }
+
+        .modal-description h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .modal-description p {
+            color: #666;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .modal-quantity-section {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-quantity-section h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .modal-quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .modal-quantity-controls .quantity-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            gap: 20px;
+        }
+
+        .modal-quantity-controls .quantity-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+        }
+
+        .modal-quantity-controls .quantity-display {
+            font-size: 1.4rem;
+            min-width: 50px;
+        }
+
+        .modal-add-to-bundle {
+            width: 100%;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-add-to-bundle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .modal-add-to-bundle:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal-metafield-section {
+            margin-bottom: 20px;
+        }
+
+        .modal-metafield-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-metafield-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .modal-metafield-content {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .modal-metafield-content .pill {
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        /* Mobile responsive for modal */
+        @media (max-width: 768px) {
+            .modal-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-images {
+                border-radius: 20px 20px 0 0;
+                min-height: 300px;
+            }
+            
+            .modal-details {
+                padding: 30px 25px;
+            }
+            
+            .modal-title {
+                font-size: 1.5rem;
+            }
+            
+            .modal-main-image {
+                min-height: 250px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-overlay {
+                padding: 10px;
+            }
+            
+            .product-modal {
+                border-radius: 15px;
+                max-height: 95vh;
+            }
+            
+            .modal-details {
+                padding: 25px 20px;
+            }
+        }
+
+        /* Product card click cursor */
+        .product-card {
+            cursor: pointer;
+        }
+
+        .product-card .quantity-controls {
+            pointer-events: auto;
+        }
+
+        .product-card .quantity-btn {
+            pointer-events: auto;
+        }
+
+        /* Bundle Animation Styles */
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideInFromRight {
+            0% {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes wiggle {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-3deg);
+            }
+            75% {
+                transform: rotate(3deg);
+            }
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Animation classes */
+        .animate-bounce-in {
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .animate-slide-in {
+            animation: slideInFromRight 0.4s ease-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        .animate-wiggle {
+            animation: wiggle 0.5s ease-in-out;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        /* Bundle summary animations */
+        .bundle-summary.updating {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
+
+        .selected-item.new-item {
+            animation: slideInFromRight 0.5s ease-out;
+        }
+
+        .selected-item.updated-item {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        /* Quantity display animations */
+        .quantity-display.updated {
+            animation: bounceIn 0.4s ease-out;
+        }
+
+        /* Floating notification style */
+        .bundle-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+            z-index: 1001;
+            transform: translateX(300px);
+            transition: all 0.4s ease;
+            font-weight: 600;
+        }
+
+        .bundle-notification.show {
+            transform: translateX(0);
+        }
+
+        .bundle-notification .notification-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+
+        /* Collection tab animation when switching */
+        .collection-tab.switching {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        /* Product card selection feedback */
+        .product-card.item-added {
+            animation: pulse 0.4s ease-in-out;
+            border-color: #28a745;
+            box-shadow: 0 8px 30px rgba(40, 167, 69, 0.15);
+        }
+
+        .product-card.item-removed {
+            animation: wiggle 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Build Your Custom Food Bundle</h1>
+            <p>Create your perfect meal combination by selecting from our fresh, high-quality ingredients. Mix and match to build the bundle that suits your taste and dietary preferences.</p>
+        </div>
+        
+        <!-- Bundle Notification -->
+        <div id="bundleNotification" class="bundle-notification">
+            <span class="notification-icon">🎉</span>
+            <span class="notification-text">Item added to bundle!</span>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading your bundle options...</div>
+        </div>
+
+        <!-- Main Bundle Widget -->
+        <div id="bundleWidget" class="bundle-widget hidden">
+            <!-- Variant Selection Section -->
+            <div class="variant-section">
+                <h2>🍽️ Choose Your Bundle Size</h2>
+                <div class="variant-selector">
+                    <select id="bundleVariantSelect">
+                        <option value="">Select your preferred bundle size...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bundle Content -->
+            <div id="bundleContent" class="hidden">
+
+                <!-- Main Layout -->
+                <div class="bundle-layout">
+                    <!-- Product Selection Area -->
+                    <div class="bundle-content">
+                        <!-- Collection Navigation -->
+                        <div id="collectionsNav" class="collections-nav">
+                            <!-- Collection tabs will be populated dynamically -->
+                        </div>
+
+                        <!-- Products Display -->
+                        <div id="productsContainer">
+                            <div id="collectionLoading" class="collection-loading hidden">
+                                <div class="mini-spinner"></div>
+                                <p>Loading products...</p>
+                            </div>
+                            
+                            <div id="productsGrid" class="products-grid">
+                                <!-- Products will be populated dynamically -->
+                            </div>
+
+                            <div id="emptyState" class="empty-state hidden">
+                                <h3>No products available</h3>
+                                <p>Please try selecting a different collection or check back later.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bundle Summary Sidebar -->
+                    <div class="bundle-summary">
+                        <h3>🛒 Your Bundle</h3>
+                        
+                        <div class="summary-content" id="summaryContent">
+                            <p style="color: #6c757d; text-align: center; padding: 20px 0;">
+                                Start adding items to see your bundle summary
+                            </p>
+                        </div>
+
+                        <div class="validation-messages" id="validationMessages">
+                            <!-- Validation messages will appear here -->
+                        </div>
+
+                        <button id="addToCartBtn" class="add-to-cart-btn" disabled>
+                            Add Bundle to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Detail Modal -->
+        <div id="productModal" class="modal-overlay" onclick="closeProductModal()">
+            <div class="product-modal" onclick="event.stopPropagation()">
+                <button class="modal-close" onclick="closeProductModal()">×</button>
+                
+                <div class="modal-content">
+                    <!-- Image Section -->
+                    <div class="modal-images">
+                        <div class="modal-main-image">
+                            <img id="modalMainImage" src="" alt="">
+                            <div id="modalImageBadges" class="modal-image-badges">
+                                <!-- Badges will be populated dynamically -->
+                            </div>
+                        </div>
+                        <div id="modalThumbnails" class="modal-thumbnails">
+                            <!-- Thumbnails will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Details Section -->
+                    <div class="modal-details">
+                        <h2 id="modalTitle" class="modal-title">Product Title</h2>
+                        <div id="modalPrice" class="modal-price">$0.00</div>
+                        
+                        <!-- Metafields Pills -->
+                        <div id="modalDietarySection" class="modal-pills-section">
+                            <h4>Dietary Information</h4>
+                            <div id="modalDietaryPills" class="modal-pills">
+                                <!-- Dietary pills will be populated -->
+                            </div>
+                        </div>
+                        
+                        <div id="modalAllergenSection" class="modal-pills-section">
+                            <h4>Allergen Information</h4>
+                            <div id="modalAllergenPills" class="modal-pills">
+                                <!-- Allergen pills will be populated -->
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div id="modalDescriptionSection" class="modal-description">
+                            <h4>Description</h4>
+                            <p id="modalDescription">Product description will appear here.</p>
+                        </div>
+                        
+                        <!-- Quantity Controls -->
+                        <div class="modal-quantity-section">
+                            <h4>Add to Bundle</h4>
+                            <div class="modal-quantity-controls">
+                                <div class="quantity-controls">
+                                    <button id="modalMinusBtn" class="quantity-btn quantity-btn-minus">-</button>
+                                    <span id="modalQuantityDisplay" class="quantity-display">0</span>
+                                    <button id="modalPlusBtn" class="quantity-btn quantity-btn-plus">+</button>
+                                </div>
+                            </div>
+                            <button id="modalAddToBundle" class="modal-add-to-bundle">
+                                Add to Bundle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global configuration
+        const CONFIG = {
+            storeIdentifier: 'rc-bundles.myshopify.com',
+            storeDomain: 'https://rc-bundles.myshopify.com',
+            storefrontAccessToken: 'ef69584f646c3ea0cfbe978d067d113d',
+            bundleProductId: '8138138353916',
+            appName: 'Custom Food Bundle Widget',
+            appVersion: '1.0.0'
+        };
+
+        // Global state
+        let bundleSettings = null;
+        let variantCollections = [];
+        let currentVariant = null;
+        let shopifyClient = null;
+        let productDataCache = new Map();
+        let bundleSelections = {
+            variantId: null,
+            variant: null,
+            items: [],
+            totalItems: 0,
+            isValid: false,
+            errors: []
+        };
+
+        // Initialize Shopify client
+        function initializeShopifyClient() {
+            shopifyClient = ShopifyStorefrontAPIClient.createStorefrontApiClient({
+                storeDomain: CONFIG.storeDomain,
+                apiVersion: '2025-01',
+                publicAccessToken: CONFIG.storefrontAccessToken
+            });
+        }
+
+        // GraphQL query for collection info only (for navigation)
+        const COLLECTION_INFO_QUERY = `
+            query getCollectionInfo($id: ID!) {
+                collection(id: $id) {
+                    id
+                    title
+                    handle
+                    description
+                }
+            }
+        `;
+
+        // GraphQL query for collection products with metafields
+        const COLLECTION_QUERY = `
+            query getCollectionWithMetafields($id: ID!, $first: Int!, $after: String) {
+                collection(id: $id) {
+                    id
+                    title
+                    description
+                    products(first: $first, after: $after) {
+                        edges {
+                            node {
+                                id
+                                title
+                                description
+                                # Dietary preferences metafield
+                                dietaryPreferences: metafield(namespace: "shopify", key: "dietary-preferences") {
+                                    id
+                                    description
+                                    value
+                                    key
+                                    type
+                                    references(first: 10) {
+                                        nodes {
+                                            ... on Metaobject {
+                                                id
+                                                fields {
+                                                    key
+                                                    value
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                # Allergen information metafield
+                                allergenInformation: metafield(namespace: "shopify", key: "allergen-information") {
+                                    id
+                                    description
+                                    value
+                                    key
+                                    type
+                                    references(first: 10) {
+                                        nodes {
+                                            ... on Metaobject {
+                                                id
+                                                fields {
+                                                    key
+                                                    value
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                # Product badges metafield
+                                badges: metafield(namespace: "custom", key: "badge") {
+                                    id
+                                    description
+                                    value
+                                    key
+                                    type
+                                    references(first: 10) {
+                                        nodes {
+                                            ... on Metaobject {
+                                                id
+                                                fields {
+                                                    key
+                                                    value
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                images(first: 5) {
+                                    edges {
+                                        node {
+                                            url
+                                            altText
+                                        }
+                                    }
+                                }
+                                variants(first: 100) {
+                                    edges {
+                                        node {
+                                            id
+                                            price {
+                                                amount
+                                                currencyCode
+                                            }
+                                            availableForSale
+                                        }
+                                    }
+                                }
+                                priceRange {
+                                    minVariantPrice {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        `;
+
+        // Utility functions from the documentation
+        function getVariantCollections(bundleSettings) {
+            if (!bundleSettings || !bundleSettings.variants) {
+                return [];
+            }
+
+            return bundleSettings.variants.map(variant => ({
+                variantId: variant.id,
+                externalVariantId: variant.external_variant_id,
+                enabled: variant.enabled,
+                itemsCount: variant.items_count,
+                collections: variant.option_sources.map(source => ({
+                    optionSourceId: source.id,
+                    collectionId: source.collection_id,
+                    quantityMin: source.quantity_min,
+                    quantityMax: source.quantity_max
+                })),
+                ranges: variant.ranges,
+                defaults: variant.selection_defaults
+            }));
+        }
+
+        function getAllCollectionIds(bundleSettings) {
+            const variantCollections = getVariantCollections(bundleSettings);
+            const allCollectionIds = variantCollections.flatMap(variant =>
+                variant.collections.map(collection => collection.collectionId)
+            );
+            return [...new Set(allCollectionIds)];
+        }
+
+        // Fetch collection info (title, handle, description)
+        async function fetchCollectionInfo(collectionId) {
+            const collectionGid = `gid://shopify/Collection/${collectionId}`;
+            
+            try {
+                const response = await shopifyClient.request(COLLECTION_INFO_QUERY, {
+                    variables: {
+                        id: collectionGid
+                    }
+                });
+                
+                return response.data?.collection;
+            } catch (error) {
+                console.error(`Error fetching collection info for ${collectionId}:`, error);
+                return null;
+            }
+        }
+
+        // Fetch all products from a collection using pagination
+        async function fetchAllProductsFromCollection(collectionId) {
+            const collectionGid = `gid://shopify/Collection/${collectionId}`;
+            let allProducts = [];
+            let hasNextPage = true;
+            let cursor = null;
+            let pageCount = 0;
+            const startTime = Date.now();
+
+            console.log(`🔄 Loading collection ${collectionId}...`);
+
+            while (hasNextPage) {
+                pageCount++;
+                console.log(`📄 Loading page ${pageCount} for collection ${collectionId}`);
+
+                const response = await shopifyClient.request(COLLECTION_QUERY, {
+                    variables: {
+                        id: collectionGid,
+                        first: 250, // Maximum allowed per request
+                        after: cursor
+                    }
+                });
+
+                const collection = response.data?.collection;
+                if (!collection) {
+                    console.warn(`⚠️ Collection ${collectionId} not found`);
+                    return null;
+                }
+
+                // Add products from this page
+                const products = collection.products.edges || [];
+                allProducts = allProducts.concat(products);
+
+                // Check pagination
+                const pageInfo = collection.products.pageInfo;
+                hasNextPage = pageInfo.hasNextPage;
+                cursor = pageInfo.endCursor;
+
+                console.log(`✅ Page ${pageCount} loaded: ${products.length} products (total: ${allProducts.length})`);
+
+                // Store collection metadata from first page
+                if (pageCount === 1) {
+                    var collectionMeta = {
+                        id: collection.id,
+                        title: collection.title,
+                        description: collection.description
+                    };
+                }
+            }
+
+            const loadTime = Date.now() - startTime;
+            console.log(`🎯 Collection ${collectionId} loaded completely:`, {
+                title: collectionMeta.title,
+                totalProducts: allProducts.length,
+                totalPages: pageCount,
+                loadTimeMs: loadTime
+            });
+
+            // Return collection with all products
+            return {
+                ...collectionMeta,
+                products: {
+                    edges: allProducts
+                }
+            };
+        }
+
+        // Bundle validation functions
+        function validateBundleSize(selections, ranges) {
+            if (!ranges || ranges.length === 0) return true;
+            
+            const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
+            const range = ranges[0];
+            
+            const minRequired = range.quantity_min || 0;
+            const maxAllowed = range.quantity_max || Infinity;
+            
+            return totalItems >= minRequired && totalItems <= maxAllowed;
+        }
+
+        function getValidationErrors(selections, variant) {
+            const errors = [];
+            if (!variant) return errors;
+            
+            const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
+            
+            // Check bundle size constraints
+            if (variant.ranges && variant.ranges.length > 0) {
+                const range = variant.ranges[0];
+                const minRequired = range.quantity_min || 0;
+                const maxAllowed = range.quantity_max || Infinity;
+                
+                if (totalItems < minRequired) {
+                    errors.push(`Bundle must contain at least ${minRequired} items total. Currently: ${totalItems}`);
+                }
+                if (totalItems > maxAllowed && maxAllowed !== null) {
+                    errors.push(`Bundle cannot exceed ${maxAllowed} items total. Currently: ${totalItems}`);
+                }
+            }
+            
+            // Check collection constraints
+            variant.collections.forEach((collection, index) => {
+                const collectionItems = selections.filter(item => 
+                    item.collectionId === collection.collectionId
+                );
+                const totalFromCollection = collectionItems.reduce((sum, item) => sum + item.quantity, 0);
+                
+                const minRequired = collection.quantityMin || 0;
+                const maxAllowed = collection.quantityMax || Infinity;
+                
+                if (minRequired > 0 && totalFromCollection < minRequired) {
+                    errors.push(`Collection ${index + 1} requires at least ${minRequired} items. Currently: ${totalFromCollection}`);
+                }
+                if (maxAllowed < Infinity && totalFromCollection > maxAllowed) {
+                    errors.push(`Collection ${index + 1} cannot exceed ${maxAllowed} items. Currently: ${totalFromCollection}`);
+                }
+            });
+            
+            return errors;
+        }
+
+        // Metafield processing functions
+        function extractMetafieldValues(metafield) {
+            if (!metafield) return [];
+            
+            // Handle different metafield types
+            if (metafield.type === 'list.metaobject_reference' && metafield.references?.nodes) {
+                const values = [];
+                metafield.references.nodes.forEach(node => {
+                    if (node.fields) {
+                        const labelField = node.fields.find(f => f.key === 'label');
+                        if (labelField) {
+                            values.push(labelField.value);
+                        }
+                    }
+                });
+                return values.filter(Boolean);
+            }
+            
+            // Handle simple value types
+            if (metafield.value) {
+                try {
+                    // Try to parse as JSON array
+                    const parsed = JSON.parse(metafield.value);
+                    return Array.isArray(parsed) ? parsed : [metafield.value];
+                } catch {
+                    // If not JSON, treat as single value
+                    return [metafield.value];
+                }
+            }
+            
+            return [];
+        }
+
+        function extractBadgeData(metafield) {
+            if (!metafield) return [];
+            
+            if (metafield.type === 'list.metaobject_reference' && metafield.references?.nodes) {
+                const badges = [];
+                metafield.references.nodes.forEach(node => {
+                    if (node.fields) {
+                        const badge = {};
+                        node.fields.forEach(field => {
+                            if (field.key === 'label') {
+                                badge.label = field.value;
+                            } else if (field.key === 'background') {
+                                badge.background = field.value;
+                            } else if (field.key === 'text_color') {
+                                badge.textColor = field.value;
+                            }
+                        });
+                        
+                        if (badge.label) {
+                            // Set default colors if not provided
+                            badge.background = badge.background || '#e74c3c';
+                            badge.textColor = badge.textColor || '#ffffff';
+                            badges.push(badge);
+                        }
+                    }
+                });
+                return badges;
+            }
+            
+            // Handle simple badge values
+            if (metafield.value) {
+                try {
+                    const parsed = JSON.parse(metafield.value);
+                    if (Array.isArray(parsed)) {
+                        return parsed.map(label => ({
+                            label,
+                            background: '#e74c3c',
+                            textColor: '#ffffff'
+                        }));
+                    }
+                } catch {
+                    return [{
+                        label: metafield.value,
+                        background: '#e74c3c',
+                        textColor: '#ffffff'
+                    }];
+                }
+            }
+            
+            return [];
+        }
+
+        function createProductPills(product) {
+            const pills = [];
+            
+            // Extract dietary preferences
+            if (product.dietaryPreferences) {
+                const dietaryValues = extractMetafieldValues(product.dietaryPreferences);
+                dietaryValues.forEach(value => {
+                    pills.push({
+                        text: value,
+                        type: 'dietary',
+                        cssClass: value.toLowerCase().replace(/[^a-z0-9]/g, '-')
+                    });
+                });
+            }
+            
+            // Extract allergen information
+            if (product.allergenInformation) {
+                const allergenValues = extractMetafieldValues(product.allergenInformation);
+                allergenValues.forEach(value => {
+                    pills.push({
+                        text: value,
+                        type: 'allergen',
+                        cssClass: value.toLowerCase().replace(/[^a-z0-9]/g, '-')
+                    });
+                });
+            }
+            
+            return pills;
+        }
+
+        function renderProductBadges(badges) {
+            if (!badges || badges.length === 0) {
+                return '';
+            }
+
+            const badgesHTML = badges.map(badge => {
+                const style = `background-color: ${badge.background}; color: ${badge.textColor};`;
+                const cssClass = badge.label.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                return `<span class="product-badge ${cssClass}" style="${style}">${badge.label}</span>`;
+            }).join('');
+
+            return `<div class="product-badges">${badgesHTML}</div>`;
+        }
+
+        function renderProductPills(pills) {
+            if (!pills || pills.length === 0) {
+                return '';
+            }
+            
+            const pillsHTML = pills.map(pill => 
+                `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
+            ).join('');
+            
+            return `<div class="product-pills">${pillsHTML}</div>`;
+        }
+
+        // Get current quantity for a product
+        function getCurrentQuantity(productId, variantId) {
+            const existingItem = bundleSelections.items.find(item => 
+                item.productId === productId && item.variantId === variantId
+            );
+            return existingItem ? existingItem.quantity : 0;
+        }
+
+        // Update item quantity
+        function updateItemQuantity(productId, variantId, collectionId, change, productData) {
+            const existingItemIndex = bundleSelections.items.findIndex(item => 
+                item.productId === productId && item.variantId === variantId
+            );
+            
+            let isNewItem = false;
+            let isRemoving = false;
+            let previousQuantity = 0;
+            
+            if (existingItemIndex >= 0) {
+                previousQuantity = bundleSelections.items[existingItemIndex].quantity;
+                bundleSelections.items[existingItemIndex].quantity += change;
+                
+                if (bundleSelections.items[existingItemIndex].quantity <= 0) {
+                    bundleSelections.items.splice(existingItemIndex, 1);
+                    isRemoving = true;
+                }
+            } else if (change > 0) {
+                bundleSelections.items.push({
+                    productId: productId,
+                    variantId: variantId,
+                    quantity: change,
+                    collectionId: collectionId,
+                    title: productData.title,
+                    price: productData.priceRange.minVariantPrice.amount,
+                    currencyCode: productData.priceRange.minVariantPrice.currencyCode
+                });
+                isNewItem = true;
+            }
+            
+            // Recalculate totals and validation
+            bundleSelections.totalItems = bundleSelections.items.reduce((sum, item) => sum + item.quantity, 0);
+            bundleSelections.errors = getValidationErrors(bundleSelections.items, bundleSelections.variant);
+            bundleSelections.isValid = bundleSelections.errors.length === 0 && bundleSelections.totalItems > 0;
+            
+            // Trigger animations and notifications
+            if (change > 0) {
+                if (isNewItem) {
+                    showBundleNotification(`${productData.title} added to bundle! 🎉`);
+                    animateProductCard(productId, variantId, 'item-added');
+                } else {
+                    showBundleNotification(`${productData.title} quantity updated! ✨`, '✨');
+                    animateProductCard(productId, variantId, 'item-added');
+                }
+            } else if (change < 0) {
+                if (isRemoving) {
+                    showBundleNotification(`${productData.title} removed from bundle`, '👋');
+                    animateProductCard(productId, variantId, 'item-removed');
+                } else {
+                    showBundleNotification(`${productData.title} quantity decreased`, '➖');
+                    animateProductCard(productId, variantId, 'item-removed');
+                }
+            }
+            
+            // Animate bundle summary update
+            animateBundleSummary();
+            
+            updateProductQuantityDisplay(productId, variantId);
+            updateBundleSummary();
+        }
+
+        // Update UI displays
+        function updateProductQuantityDisplay(productId, variantId) {
+            const currentQty = getCurrentQuantity(productId, variantId);
+            const productElements = document.querySelectorAll(`[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
+            
+            productElements.forEach(element => {
+                const quantityDisplay = element.querySelector('.quantity-display');
+                if (quantityDisplay) {
+                    quantityDisplay.textContent = currentQty;
+                    
+                    // Animate quantity change
+                    quantityDisplay.classList.add('updated');
+                    setTimeout(() => {
+                        quantityDisplay.classList.remove('updated');
+                    }, 400);
+                }
+                
+                const minusButton = element.querySelector('.quantity-btn-minus');
+                if (minusButton) {
+                    minusButton.disabled = currentQty <= 0;
+                }
+            });
+        }
+
+        function updateBundleSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const validationMessages = document.getElementById('validationMessages');
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            
+            if (bundleSelections.items.length === 0) {
+                summaryContent.innerHTML = `
+                    <div class="animate-fade-in-up" style="color: #6c757d; text-align: center; padding: 20px 0;">
+                        🛒 Start adding items to see your bundle summary
+                    </div>
+                `;
+                validationMessages.innerHTML = '';
+                addToCartBtn.disabled = true;
+                return;
+            }
+            
+            // Display selected items
+            const totalPrice = bundleSelections.items.reduce((sum, item) => 
+                sum + (parseFloat(item.price) * item.quantity), 0
+            );
+            
+            const itemsHTML = bundleSelections.items.map((item, index) => `
+                <div class="selected-item animate-slide-in" style="animation-delay: ${index * 0.1}s">
+                    <div class="item-info">
+                        <div class="item-title">${item.title}</div>
+                        <div class="item-quantity">Quantity: ${item.quantity}</div>
+                    </div>
+                    <div class="item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            summaryContent.innerHTML = `
+                ${itemsHTML}
+                <div class="bundle-total animate-fade-in-up" style="animation-delay: ${bundleSelections.items.length * 0.1}s">
+                    <div class="total-line">
+                        <span>Total Items:</span>
+                        <span>${bundleSelections.totalItems}</span>
+                    </div>
+                    <div class="total-line final-total">
+                        <span>Total Price:</span>
+                        <span>$${totalPrice.toFixed(2)} ${bundleSelections.items[0]?.currencyCode || 'USD'}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Display validation messages with animation
+            if (bundleSelections.errors.length > 0) {
+                validationMessages.innerHTML = bundleSelections.errors.map(error => 
+                    `<div class="validation-error animate-fade-in-up">${error}</div>`
+                ).join('');
+            } else if (bundleSelections.totalItems > 0) {
+                validationMessages.innerHTML = '<div class="validation-success animate-bounce-in">✅ Bundle is complete and ready to add to cart!</div>';
+            } else {
+                validationMessages.innerHTML = '';
+            }
+            
+            // Update add to cart button with animation
+            if (bundleSelections.isValid && addToCartBtn.disabled) {
+                addToCartBtn.classList.add('animate-bounce-in');
+                setTimeout(() => {
+                    addToCartBtn.classList.remove('animate-bounce-in');
+                }, 600);
+            }
+            addToCartBtn.disabled = !bundleSelections.isValid;
+        }
+
+        // Render product card
+        function renderProductCard(product, collectionId) {
+            const productData = product.node;
+            const productId = productData.id;
+            const variantId = productData.variants.edges[0]?.node?.id || '';
+            const currentQuantity = getCurrentQuantity(productId, variantId);
+            
+            // Store product data for later use
+            productDataCache.set(productId, productData);
+            
+            const imageUrl = productData.images.edges[0]?.node?.url || '';
+            const altText = productData.images.edges[0]?.node?.altText || productData.title;
+            const price = productData.priceRange.minVariantPrice.amount;
+            const currencyCode = productData.priceRange.minVariantPrice.currencyCode;
+
+            // Extract metafield data
+            const pills = createProductPills(productData);
+            const badges = extractBadgeData(productData.badges);
+            const pillsHTML = renderProductPills(pills);
+            const badgesHTML = renderProductBadges(badges);
+
+            return `
+                <div class="product-card" data-product-id="${productId}" data-variant-id="${variantId}">
+                    <div class="product-image-container" onclick="openProductModal('${productId}', '${variantId}', '${collectionId}')" style="cursor: pointer;">
+                        <img src="${imageUrl}" alt="${altText}" class="product-image">
+                        ${badgesHTML}
+                    </div>
+                    <div class="product-details">
+                        <h4 class="product-title" onclick="openProductModal('${productId}', '${variantId}', '${collectionId}')" style="cursor: pointer;">${productData.title}</h4>
+                        ${pillsHTML}
+                        <div class="product-price">$${parseFloat(price).toFixed(2)} ${currencyCode}</div>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn quantity-btn-minus" 
+                                    onclick="updateQuantity('${productId}', '${variantId}', '${collectionId}', -1)"
+                                    ${currentQuantity <= 0 ? 'disabled' : ''}>-</button>
+                            <span class="quantity-display">${currentQuantity}</span>
+                            <button class="quantity-btn quantity-btn-plus" 
+                                    onclick="updateQuantity('${productId}', '${variantId}', '${collectionId}', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Global function for quantity updates (called from HTML)
+        window.updateQuantity = function(productId, variantId, collectionId, change) {
+            const productData = productDataCache.get(productId);
+            if (productData) {
+                updateItemQuantity(productId, variantId, collectionId, change, productData);
+            }
+        };
+
+        // Display products for a collection
+        async function displayCollectionProducts(collectionId, collectionTitle) {
+            const collectionLoading = document.getElementById('collectionLoading');
+            const productsGrid = document.getElementById('productsGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Show loading state
+            collectionLoading.classList.remove('hidden');
+            productsGrid.innerHTML = '';
+            emptyState.classList.add('hidden');
+            
+            try {
+                const collection = await fetchAllProductsFromCollection(collectionId);
+                
+                if (!collection || !collection.products || collection.products.edges.length === 0) {
+                    // Show empty state
+                    collectionLoading.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                
+                // Render products
+                const productsHTML = collection.products.edges
+                    .filter(product => product.node.variants.edges.length > 0) // Only products with variants
+                    .map(product => renderProductCard(product, collectionId))
+                    .join('');
+                
+                productsGrid.innerHTML = productsHTML;
+                
+                // Update existing quantity displays
+                collection.products.edges.forEach(product => {
+                    const productId = product.node.id;
+                    const variantId = product.node.variants.edges[0]?.node?.id;
+                    if (variantId) {
+                        updateProductQuantityDisplay(productId, variantId);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading collection products:', error);
+                emptyState.querySelector('h3').textContent = 'Error loading products';
+                emptyState.querySelector('p').textContent = 'Please try again or select a different collection.';
+                emptyState.classList.remove('hidden');
+            } finally {
+                collectionLoading.classList.add('hidden');
+            }
+        }
+
+        // Setup collection navigation
+        async function setupCollectionNavigation(variant) {
+            const collectionsNav = document.getElementById('collectionsNav');
+            
+            if (!variant.collections || variant.collections.length === 0) {
+                collectionsNav.innerHTML = '<p>No collections available for this variant.</p>';
+                return;
+            }
+            
+            // Show loading state for navigation
+            collectionsNav.innerHTML = '<div class="collection-loading"><div class="mini-spinner"></div><p>Loading collections...</p></div>';
+            
+            try {
+                // Fetch collection names for all collections
+                const collectionPromises = variant.collections.map(async (collection) => {
+                    const collectionData = await fetchCollectionInfo(collection.collectionId);
+                    return {
+                        ...collection,
+                        title: collectionData?.title || `Collection ${collection.collectionId}`,
+                        handle: collectionData?.handle || ''
+                    };
+                });
+                
+                const collectionsWithNames = await Promise.all(collectionPromises);
+                
+                const collectionsHTML = collectionsWithNames.map((collection, index) => {
+                    const isFirst = index === 0;
+                    const constraintsText = [];
+                    if (collection.quantityMin) constraintsText.push(`min: ${collection.quantityMin}`);
+                    if (collection.quantityMax) constraintsText.push(`max: ${collection.quantityMax}`);
+                    const constraintsDisplay = constraintsText.length > 0 ? ` (${constraintsText.join(', ')})` : '';
+                    
+                    return `
+                        <div class="collection-tab ${isFirst ? 'active' : ''}" 
+                             onclick="selectCollection('${collection.collectionId}', this, ${index}, '${collection.title}')">
+                            ${collection.title}${constraintsDisplay}
+                        </div>
+                    `;
+                }).join('');
+                
+                collectionsNav.innerHTML = collectionsHTML;
+                
+                // Load first collection by default
+                if (collectionsWithNames.length > 0) {
+                    displayCollectionProducts(collectionsWithNames[0].collectionId, collectionsWithNames[0].title);
+                }
+                
+            } catch (error) {
+                console.error('Error loading collection names:', error);
+                
+                // Fallback to generic names
+                const collectionsHTML = variant.collections.map((collection, index) => {
+                    const isFirst = index === 0;
+                    return `
+                        <div class="collection-tab ${isFirst ? 'active' : ''}" 
+                             onclick="selectCollection('${collection.collectionId}', this, ${index}, 'Collection ${index + 1}')">
+                            Collection ${index + 1}
+                            ${collection.quantityMin ? ` (min: ${collection.quantityMin})` : ''}
+                            ${collection.quantityMax ? ` (max: ${collection.quantityMax})` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                collectionsNav.innerHTML = collectionsHTML;
+                
+                if (variant.collections.length > 0) {
+                    displayCollectionProducts(variant.collections[0].collectionId, 'Collection 1');
+                }
+            }
+        }
+
+        // Global function for collection selection
+        window.selectCollection = function(collectionId, tabElement, index, collectionTitle) {
+            // Animate the clicked tab
+            tabElement.classList.add('switching');
+            setTimeout(() => {
+                tabElement.classList.remove('switching');
+            }, 300);
+            
+            // Update tab states
+            document.querySelectorAll('.collection-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            tabElement.classList.add('active');
+            
+            // Show notification for collection switch
+            showBundleNotification(`Browsing ${collectionTitle || `Collection ${index + 1}`} 📂`, '📂');
+            
+            // Load collection products
+            displayCollectionProducts(collectionId, collectionTitle || `Collection ${index + 1}`);
+        };
+
+        // Setup bundle variant picker
+        function populateBundleVariantPicker(variantCollections) {
+            const select = document.getElementById('bundleVariantSelect');
+            
+            variantCollections.forEach(variant => {
+                if (variant.enabled) {
+                    const option = document.createElement('option');
+                    option.value = variant.externalVariantId;
+                    
+                    // Create descriptive text for the variant
+                    const rangeText = variant.ranges && variant.ranges.length > 0 
+                        ? (() => {
+                            const range = variant.ranges[0];
+                            const min = range.quantity_min || 0;
+                            const max = range.quantity_max || '∞';
+                            return `${min}-${max} items`;
+                        })()
+                        : `${variant.itemsCount} items`;
+                    
+                    option.textContent = `Bundle Size: ${rangeText}`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Show bundle notification
+        function showBundleNotification(message, icon = '🎉') {
+            const notification = document.getElementById('bundleNotification');
+            const iconElement = notification.querySelector('.notification-icon');
+            const textElement = notification.querySelector('.notification-text');
+            
+            iconElement.textContent = icon;
+            textElement.textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Animate product card
+        function animateProductCard(productId, variantId, animationType) {
+            const productCard = document.querySelector(`[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
+            if (productCard) {
+                productCard.classList.add(animationType);
+                
+                setTimeout(() => {
+                    productCard.classList.remove(animationType);
+                }, 600);
+            }
+        }
+
+        // Animate bundle summary
+        function animateBundleSummary() {
+            const bundleSummary = document.querySelector('.bundle-summary');
+            if (bundleSummary) {
+                bundleSummary.classList.add('updating');
+                
+                setTimeout(() => {
+                    bundleSummary.classList.remove('updating');
+                }, 200);
+            }
+        }
+
+        // Modal functionality
+        let currentModalProduct = null;
+        let currentModalCollectionId = null;
+
+        function openProductModal(productId, variantId, collectionId) {
+            const productData = productDataCache.get(productId);
+            if (!productData) return;
+
+            currentModalProduct = {
+                productId,
+                variantId,
+                productData
+            };
+            currentModalCollectionId = collectionId;
+
+            // Populate modal content
+            populateModalContent(productData, productId, variantId, collectionId);
+            
+            // Show modal with animation
+            const modal = document.getElementById('productModal');
+            modal.classList.add('active');
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+            
+            // Add keyboard support
+            document.addEventListener('keydown', handleModalKeydown);
+            
+            // Show notification
+            showBundleNotification(`Viewing ${productData.title} details 👁️`, '👁️');
+        }
+
+        function closeProductModal() {
+            const modal = document.getElementById('productModal');
+            modal.classList.remove('active');
+            
+            // Restore body scroll
+            document.body.style.overflow = '';
+            
+            // Remove keyboard support
+            document.removeEventListener('keydown', handleModalKeydown);
+            
+            currentModalProduct = null;
+            currentModalCollectionId = null;
+        }
+
+        function handleModalKeydown(event) {
+            if (event.key === 'Escape') {
+                closeProductModal();
+            }
+        }
+
+        function populateModalContent(productData, productId, variantId, collectionId) {
+            // Set title and price
+            document.getElementById('modalTitle').textContent = productData.title;
+            const price = productData.priceRange.minVariantPrice.amount;
+            const currencyCode = productData.priceRange.minVariantPrice.currencyCode;
+            document.getElementById('modalPrice').textContent = `$${parseFloat(price).toFixed(2)} ${currencyCode}`;
+
+            // Set main image
+            const mainImage = document.getElementById('modalMainImage');
+            if (productData.images.edges.length > 0) {
+                mainImage.src = productData.images.edges[0].node.url;
+                mainImage.alt = productData.images.edges[0].node.altText || productData.title;
+            }
+
+            // Set badges
+            const badges = extractBadgeData(productData.badges);
+            const modalImageBadges = document.getElementById('modalImageBadges');
+            modalImageBadges.innerHTML = renderProductBadges(badges);
+
+            // Set thumbnails
+            const thumbnailsContainer = document.getElementById('modalThumbnails');
+            if (productData.images.edges.length > 1) {
+                const thumbnailsHTML = productData.images.edges.map((image, index) => `
+                    <div class="modal-thumbnail ${index === 0 ? 'active' : ''}" 
+                         onclick="switchModalImage('${image.node.url}', '${image.node.altText || productData.title}', this)">
+                        <img src="${image.node.url}" alt="${image.node.altText || productData.title}">
+                    </div>
+                `).join('');
+                thumbnailsContainer.innerHTML = thumbnailsHTML;
+            } else {
+                thumbnailsContainer.innerHTML = '';
+            }
+
+            // Set description
+            const description = productData.description || 'No description available.';
+            document.getElementById('modalDescription').textContent = description;
+
+            // Set metafields pills
+            const pills = createProductPills(productData);
+            const dietaryPills = pills.filter(pill => pill.type === 'dietary');
+            const allergenPills = pills.filter(pill => pill.type === 'allergen');
+
+            // Dietary pills
+            const dietarySection = document.getElementById('modalDietarySection');
+            const dietaryPillsContainer = document.getElementById('modalDietaryPills');
+            if (dietaryPills.length > 0) {
+                dietaryPillsContainer.innerHTML = dietaryPills.map(pill => 
+                    `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
+                ).join('');
+                dietarySection.style.display = 'block';
+            } else {
+                dietarySection.style.display = 'none';
+            }
+
+            // Allergen pills
+            const allergenSection = document.getElementById('modalAllergenSection');
+            const allergenPillsContainer = document.getElementById('modalAllergenPills');
+            if (allergenPills.length > 0) {
+                allergenPillsContainer.innerHTML = allergenPills.map(pill => 
+                    `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
+                ).join('');
+                allergenSection.style.display = 'block';
+            } else {
+                allergenSection.style.display = 'none';
+            }
+
+            // Set current quantity
+            const currentQuantity = getCurrentQuantity(productId, variantId);
+            document.getElementById('modalQuantityDisplay').textContent = currentQuantity;
+            
+            // Update minus button state
+            document.getElementById('modalMinusBtn').disabled = currentQuantity <= 0;
+
+            // Setup modal quantity controls
+            setupModalQuantityControls(productId, variantId, collectionId, productData);
+        }
+
+        function switchModalImage(imageSrc, imageAlt, thumbnailElement) {
+            // Update main image
+            const mainImage = document.getElementById('modalMainImage');
+            mainImage.src = imageSrc;
+            mainImage.alt = imageAlt;
+
+            // Update thumbnail states
+            document.querySelectorAll('.modal-thumbnail').forEach(thumb => {
+                thumb.classList.remove('active');
+            });
+            thumbnailElement.classList.add('active');
+        }
+
+        function setupModalQuantityControls(productId, variantId, collectionId, productData) {
+            const minusBtn = document.getElementById('modalMinusBtn');
+            const plusBtn = document.getElementById('modalPlusBtn');
+            const addToBundleBtn = document.getElementById('modalAddToBundle');
+
+            // Remove existing event listeners
+            const newMinusBtn = minusBtn.cloneNode(true);
+            const newPlusBtn = plusBtn.cloneNode(true);
+            const newAddToBundleBtn = addToBundleBtn.cloneNode(true);
+            
+            minusBtn.parentNode.replaceChild(newMinusBtn, minusBtn);
+            plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
+            addToBundleBtn.parentNode.replaceChild(newAddToBundleBtn, addToBundleBtn);
+
+            // Add new event listeners
+            newMinusBtn.addEventListener('click', () => {
+                updateItemQuantity(productId, variantId, collectionId, -1, productData);
+                updateModalQuantityDisplay(productId, variantId);
+            });
+
+            newPlusBtn.addEventListener('click', () => {
+                updateItemQuantity(productId, variantId, collectionId, 1, productData);
+                updateModalQuantityDisplay(productId, variantId);
+            });
+
+            newAddToBundleBtn.addEventListener('click', () => {
+                updateItemQuantity(productId, variantId, collectionId, 1, productData);
+                updateModalQuantityDisplay(productId, variantId);
+            });
+        }
+
+        function updateModalQuantityDisplay(productId, variantId) {
+            const currentQuantity = getCurrentQuantity(productId, variantId);
+            const quantityDisplay = document.getElementById('modalQuantityDisplay');
+            const minusBtn = document.getElementById('modalMinusBtn');
+            
+            quantityDisplay.textContent = currentQuantity;
+            quantityDisplay.classList.add('updated');
+            setTimeout(() => {
+                quantityDisplay.classList.remove('updated');
+            }, 400);
+            
+            minusBtn.disabled = currentQuantity <= 0;
+        }
+
+        // Global functions for modal
+        window.openProductModal = openProductModal;
+        window.closeProductModal = closeProductModal;
+        window.switchModalImage = switchModalImage;
+
+        // Handle variant selection
+        async function handleVariantSelection(variantId) {
+            const variant = variantCollections.find(v => v.externalVariantId === variantId);
+            if (!variant) return;
+            
+            // Reset bundle selections
+            bundleSelections = {
+                variantId: variantId,
+                variant: variant,
+                items: [],
+                totalItems: 0,
+                isValid: false,
+                errors: []
+            };
+            
+            currentVariant = variant;
+            
+            // Update UI with animations
+            setupCollectionNavigation(variant);
+            updateBundleSummary();
+            
+            // Show bundle content with animation
+            const bundleContent = document.getElementById('bundleContent');
+            bundleContent.classList.remove('hidden');
+            bundleContent.classList.add('animate-fade-in-up');
+            
+            // Show success notification
+            showBundleNotification('Bundle size selected! Start adding items 🎯', '🎯');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Variant selector
+            document.getElementById('bundleVariantSelect').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    handleVariantSelection(e.target.value);
+                } else {
+                    document.getElementById('bundleContent').classList.add('hidden');
+                }
+            });
+            
+            // Add to cart button
+            document.getElementById('addToCartBtn').addEventListener('click', () => {
+                addBundleToCart(bundleSelections);
+            });
+        }
+
+        // Cart functionality
+        function convertToRechargeBundleFormat(bundleSelections) {
+            const bundleProductData = {
+                productId: CONFIG.bundleProductId,
+                variantId: bundleSelections.variant.externalVariantId.replace('gid://shopify/ProductVariant/', ''),
+                handle: 'bundle-product',
+            };
+
+            const bundle = {
+                externalVariantId: bundleSelections.variant.externalVariantId.replace('gid://shopify/ProductVariant/', ''),
+                externalProductId: CONFIG.bundleProductId,
+                selections: bundleSelections.items.map(item => ({
+                    collectionId: item.collectionId,
+                    externalProductId: item.productId.replace('gid://shopify/Product/', ''),
+                    externalVariantId: item.variantId.replace('gid://shopify/ProductVariant/', ''),
+                    quantity: item.quantity,
+                }))
+            };
+
+            return { bundle, bundleProductData };
+        }
+
+        async function getRechargeCartItems(bundleSelections) {
+            const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+            const cartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+            return cartItems;
+        }
+
+        function convertRechargeItemsToGraphQL(rechargeCartItems) {
+            return rechargeCartItems.map(item => ({
+                merchandiseId: `gid://shopify/ProductVariant/${item.id}`,
+                quantity: item.quantity,
+                attributes: Object.entries(item.properties || {}).map(([key, value]) => ({
+                    key,
+                    value: String(value)
+                }))
+            }));
+        }
+
+        async function addBundleToCartGraphQL(bundleSelections) {
+            try {
+                console.log('🛒 Adding bundle to cart via GraphQL...', bundleSelections);
+                
+                const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+                const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+                console.log('🔧 Recharge cart items:', rechargeCartItems);
+                
+                const cartLines = convertRechargeItemsToGraphQL(rechargeCartItems);
+                
+                const cartCreateMutation = `
+                    mutation cartCreate($input: CartInput!) {
+                        cartCreate(input: $input) {
+                            cart {
+                                id
+                                checkoutUrl
+                                estimatedCost {
+                                    totalAmount {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                                lines(first: 100) {
+                                    edges {
+                                        node {
+                                            id
+                                            quantity
+                                            merchandise {
+                                                ... on ProductVariant {
+                                                    id
+                                                    title
+                                                    product {
+                                                        title
+                                                    }
+                                                }
+                                            }
+                                            attributes {
+                                                key
+                                                value
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                `;
+                
+                const response = await shopifyClient.request(cartCreateMutation, {
+                    variables: {
+                        input: {
+                            lines: cartLines
+                        }
+                    }
+                });
+                
+                if (response.data?.cartCreate?.userErrors?.length > 0) {
+                    throw new Error('Cart creation failed: ' + response.data.cartCreate.userErrors.map(e => e.message).join(', '));
+                }
+                
+                const cart = response.data?.cartCreate?.cart;
+                if (!cart) {
+                    throw new Error('Failed to create cart');
+                }
+                
+                console.log('✅ Bundle added to cart successfully:', {
+                    cartId: cart.id,
+                    checkoutUrl: cart.checkoutUrl,
+                    totalCost: cart.estimatedCost?.totalAmount?.amount,
+                    itemCount: cart.lines.edges.length
+                });
+                
+                // Redirect to checkout
+                window.location.href = cart.checkoutUrl;
+                
+                return cart;
+                
+            } catch (error) {
+                console.error('❌ Error adding bundle to cart:', error);
+                alert('Failed to add bundle to cart. Please try again.');
+                throw error;
+            }
+        }
+
+        async function addBundleToCartAjax(bundleSelections) {
+            try {
+                console.log('🛒 Adding bundle to cart via Ajax...', bundleSelections);
+                
+                const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+                const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+                console.log('🔧 Recharge cart items:', rechargeCartItems);
+                
+                const cartData = { items: rechargeCartItems };
+                
+                const response = await fetch(window.Shopify.routes.root + 'cart/add.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cartData),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || errorData.description || 'Failed to add to cart');
+                }
+                
+                const result = await response.json();
+                console.log('✅ Bundle added to cart successfully:', result);
+                
+                // Redirect to cart page
+                window.location.href = '/cart';
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Error adding bundle to cart:', error);
+                alert('Failed to add bundle to cart. Please try again.');
+                throw error;
+            }
+        }
+
+        function isShopifyOnlineStore() {
+            return typeof window !== 'undefined' && 
+                   window.Shopify && 
+                   window.Shopify.routes;
+        }
+
+        async function addBundleToCart(bundleSelections) {
+            if (!bundleSelections.isValid) {
+                alert('Please complete your bundle selection before adding to cart.');
+                return;
+            }
+            
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            const originalText = addToCartBtn.textContent;
+            addToCartBtn.disabled = true;
+            addToCartBtn.textContent = 'Adding to Cart...';
+            
+            try {
+                if (isShopifyOnlineStore()) {
+                    await addBundleToCartAjax(bundleSelections);
+                } else {
+                    await addBundleToCartGraphQL(bundleSelections);
+                }
+            } catch (error) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.textContent = originalText;
+            }
+        }
+
+        // Main initialization function
+        async function initializeBundleWidget() {
+            try {
+                console.log('🚀 Initializing bundle widget...');
+                
+                // Initialize clients
+                initializeShopifyClient();
+                await recharge.init({
+                    storeIdentifier: CONFIG.storeIdentifier,
+                    appName: CONFIG.appName,
+                    appVersion: CONFIG.appVersion
+                });
+                
+                // Load bundle settings
+                console.log('📦 Loading bundle settings...');
+                bundleSettings = await recharge.cdn.getCDNBundleSettings(CONFIG.bundleProductId);
+                variantCollections = getVariantCollections(bundleSettings);
+                
+                console.log('✅ Bundle settings loaded:', {
+                    bundleId: CONFIG.bundleProductId,
+                    variantsCount: variantCollections.length,
+                    variants: variantCollections.map(v => ({
+                        id: v.externalVariantId,
+                        enabled: v.enabled,
+                        collectionsCount: v.collections.length
+                    }))
+                });
+                
+                // Setup UI
+                populateBundleVariantPicker(variantCollections);
+                setupEventListeners();
+                
+                // Auto-select first variant
+                if (variantCollections.length > 0) {
+                    const firstVariant = variantCollections[0];
+                    // Set the select value
+                    const select = document.getElementById('bundleVariantSelect');
+                    select.value = firstVariant.externalVariantId;
+                    
+                    // Trigger variant selection
+                    await handleVariantSelection(firstVariant.externalVariantId);
+                }
+                
+                // Hide loading and show widget
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('bundleWidget').classList.remove('hidden');
+                
+                console.log('✅ Bundle widget initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Error initializing bundle widget:', error);
+                
+                // Show error state
+                const loadingState = document.getElementById('loadingState');
+                loadingState.innerHTML = `
+                    <div style="text-align: center; color: #dc3545;">
+                        <h3>Failed to Load Bundle</h3>
+                        <p>There was an error loading the bundle configuration. Please refresh the page to try again.</p>
+                        <button onclick="window.location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Start the widget when the page loads
+        document.addEventListener('DOMContentLoaded', initializeBundleWidget);
+    </script>
+</body>
+</html>

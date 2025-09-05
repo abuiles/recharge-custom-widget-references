@@ -1,0 +1,1851 @@
+This is an llms.txt file that aims to help developers how to load recharge bundles configuration and how to build custom bundles widgets.
+
+**🚀 Quick Start:** See `one_shot_instructions_v2.txt` for a simple configuration template to get started quickly.
+
+## Loading Recharge Bundle Settings
+
+### Using CDN Version of Recharge SDK
+
+To load bundle configuration from Recharge, use the CDN version of their SDK:
+
+1. **Include the SDK Script**
+```html
+<script src="https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js"></script>
+```
+
+2. **Initialize the SDK**
+```javascript
+await recharge.init({
+    storeIdentifier: 'your-store.myshopify.com',
+    appName: 'Your App Name',
+    appVersion: '1.0.0'
+});
+```
+
+3. **Fetch Bundle Settings**
+```javascript
+const externalProductId = 'your-product-id';
+const bundleSettings = await recharge.cdn.getCDNBundleSettings(externalProductId);
+```
+
+### Example Implementation
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js"></script>
+</head>
+<body>
+    <script>
+        async function loadBundleSettings() {
+            try {
+                // Initialize SDK
+                await recharge.init({
+                    storeIdentifier: 'rc-bundles.myshopify.com',
+                    appName: 'Bundle Widget',
+                    appVersion: '1.0.0'
+                });
+
+                // Fetch bundle settings
+                const bundleSettings = await recharge.cdn.getCDNBundleSettings('8138138353916');
+                console.log('Bundle Settings:', bundleSettings);
+
+                // Use bundleSettings to build your custom widget
+
+            } catch (error) {
+                console.error('Error loading bundle settings:', error);
+            }
+        }
+
+        loadBundleSettings();
+    </script>
+</body>
+</html>
+```
+
+### Key Points
+
+- The CDN requests are cached by Recharge
+- Use `resetCDNCache()` to clear cache and fetch updated data
+- External Product ID is the Shopify product ID for the bundle
+- Store identifier should be your myshopify.com domain
+- Bundle settings contain all configuration needed to build custom widgets
+
+## Extracting Collections from Bundle Settings
+
+### Get Collections for Each Variant
+
+Bundle variants contain `option_sources` which represent Shopify collections that contain the available products for that variant.
+
+```javascript
+/**
+ * Extracts collections associated with each bundle variant
+ * @param {Object} bundleSettings - The bundle settings from getCDNBundleSettings
+ * @returns {Array} Array of variant objects with their associated collections
+ */
+function getVariantCollections(bundleSettings) {
+    if (!bundleSettings || !bundleSettings.variants) {
+        return [];
+    }
+
+    return bundleSettings.variants.map(variant => ({
+        variantId: variant.id,
+        externalVariantId: variant.external_variant_id,
+        enabled: variant.enabled,
+        itemsCount: variant.items_count,
+        collections: variant.option_sources.map(source => ({
+            optionSourceId: source.id,
+            collectionId: source.collection_id,
+            quantityMin: source.quantity_min,
+            quantityMax: source.quantity_max
+        })),
+        ranges: variant.ranges,
+        defaults: variant.selection_defaults
+    }));
+}
+
+/**
+ * Get all unique collection IDs from bundle settings
+ * @param {Object} bundleSettings - The bundle settings from getCDNBundleSettings
+ * @returns {Array} Array of unique collection IDs
+ */
+function getAllCollectionIds(bundleSettings) {
+    const variantCollections = getVariantCollections(bundleSettings);
+    const allCollectionIds = variantCollections.flatMap(variant =>
+        variant.collections.map(collection => collection.collectionId)
+    );
+    return [...new Set(allCollectionIds)];
+}
+
+/**
+ * Get collections for a specific variant
+ * @param {Object} bundleSettings - The bundle settings from getCDNBundleSettings
+ * @param {string} externalVariantId - The Shopify variant ID
+ * @returns {Array} Array of collection objects for the variant
+ */
+function getCollectionsForVariant(bundleSettings, externalVariantId) {
+    const variantCollections = getVariantCollections(bundleSettings);
+    const variant = variantCollections.find(v => v.externalVariantId === externalVariantId);
+    return variant ? variant.collections : [];
+}
+```
+
+### Usage Example
+
+```javascript
+// After loading bundle settings
+const bundleSettings = await recharge.cdn.getCDNBundleSettings('8138138353916');
+
+// Get all variant collections
+const variantCollections = getVariantCollections(bundleSettings);
+console.log('Variant Collections:', variantCollections);
+
+// Get all unique collection IDs
+const collectionIds = getAllCollectionIds(bundleSettings);
+console.log('Collection IDs:', collectionIds);
+
+// Get collections for specific variant
+const collections = getCollectionsForVariant(bundleSettings, '44636069724412');
+console.log('Collections for variant:', collections);
+```
+
+### Bundle Rules Explanation
+
+**Important:** Understanding bundle sizing and collection constraints:
+
+- **`variant.ranges`** - Defines the total bundle size for dynamic pricing:
+  - `quantity_min: null` = Optional (0 minimum, use 0 as fallback)
+  - `quantity_min: 1` = Must include at least 1 item in bundle
+  - `quantity_max: null` = Infinite maximum (no upper limit)
+  - `quantity_max: 20` = Maximum 20 items allowed in bundle
+- **`items_count`** - Should be ignored in favor of ranges for dynamic bundles
+- **`option_sources` quantity constraints** - Per-collection rules:
+  - `quantity_min: null` = Collection is optional (no minimum required)
+  - `quantity_min: 3` = Must include at least 3 items from this collection
+  - `quantity_max: 5` = Can include maximum 5 items from this collection
+  - `quantity_max: null` = No maximum limit for this collection
+
+### Example Output
+
+```javascript
+// variantCollections result:
+[
+  {
+    variantId: 32967,
+    externalVariantId: "44636069724412",
+    enabled: true,
+    itemsCount: 2, // IGNORE: Use ranges instead
+    collections: [
+      {
+        optionSourceId: 403608,
+        collectionId: "400595910908", // Breakfast collection
+        quantityMin: null, // Optional collection (no minimum)
+        quantityMax: null  // No maximum limit
+      },
+      {
+        optionSourceId: 403609,
+        collectionId: "400321020156", // Lunch collection  
+        quantityMin: 3,    // Must include at least 3 lunch items
+        quantityMax: 5     // Can include max 5 lunch items
+      }
+    ],
+    ranges: [{ id: 1298, quantity_min: 1, quantity_max: null }], // Bundle size: 1-∞ items total (no max limit)
+    defaults: [...]
+  }
+]
+```
+
+## How Bundle Selection Works
+
+### Selection Rules Implementation
+
+When building a bundle widget, you need to track selections and validate against both bundle-level and collection-level constraints:
+
+#### 1. Bundle-Level Constraints (ranges)
+```javascript
+// Example: ranges = [{ quantity_min: 1, quantity_max: null }]
+// Means: Bundle must contain 1-∞ items total
+
+function validateBundleSize(selections, ranges) {
+    const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
+    const range = ranges[0]; // Usually one range per variant
+    
+    const minRequired = range.quantity_min || 0;
+    const maxAllowed = range.quantity_max || Infinity;
+    
+    return totalItems >= minRequired && totalItems <= maxAllowed;
+}
+```
+
+#### 2. Collection-Level Constraints (option_sources)
+```javascript
+// Example: { quantityMin: 3, quantityMax: 5, collectionId: "123" }
+// Means: Must have 3-5 items from this specific collection
+
+function validateCollectionConstraints(selections, collections) {
+    return collections.every(collection => {
+        const collectionItems = selections.filter(item => 
+            item.collectionId === collection.collectionId
+        );
+        const totalFromCollection = collectionItems.reduce((sum, item) => sum + item.quantity, 0);
+        
+        const minRequired = collection.quantityMin || 0;
+        const maxAllowed = collection.quantityMax || Infinity;
+        
+        return totalFromCollection >= minRequired && totalFromCollection <= maxAllowed;
+    });
+}
+```
+
+#### 3. Selection Data Structure
+```javascript
+// Keep selections in this format:
+const bundleSelections = {
+    variantId: "44636069724412",
+    items: [
+        {
+            productId: "gid://shopify/Product/123",
+            variantId: "gid://shopify/ProductVariant/456", 
+            quantity: 2,
+            collectionId: "400595910908",
+            title: "Product Name",
+            price: "10.00"
+        }
+    ],
+    isValid: true, // Check against all constraints
+    totalItems: 2,
+    errors: [] // Validation error messages
+};
+```
+
+## Complete Bundle Widget Implementation
+
+### HTML Structure
+
+Build your bundle widget with these key components:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bundle Widget</title>
+    <!-- Recharge SDK CDN -->
+    <script src="https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js"></script>
+    <!-- Shopify Storefront API Client CDN -->
+    <script src="https://unpkg.com/@shopify/storefront-api-client@1.0.9/dist/umd/storefront-api-client.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Bundle Builder</h1>
+        
+        <!-- Loading State -->
+        <div id="status" class="loading">Loading bundle...</div>
+        
+        <!-- Bundle Widget -->
+        <div id="bundleWidget" style="display: none;">
+            <h2>🛍️ Bundle Widget</h2>
+            
+            <!-- Variant Selector -->
+            <div class="info">
+                <label for="bundleVariantSelect"><strong>Select Bundle Variant:</strong></label>
+                <select id="bundleVariantSelect">
+                    <option value="">Choose a variant...</option>
+                </select>
+            </div>
+            
+            <!-- Bundle Content -->
+            <div id="bundleContent" style="display: none;">
+                <!-- Bundle Info -->
+                <div id="bundleInfo" class="info"></div>
+                
+                <!-- Bundle Selection Summary -->
+                <div id="bundleSummary" class="bundle-summary" style="display: none;">
+                    <h3>🛒 Your Bundle Selection</h3>
+                    <div id="summaryContent"></div>
+                    <div id="validationMessages"></div>
+                    <button id="addToCartBtn" disabled>Add Bundle to Cart</button>
+                </div>
+                
+                <!-- Product Collections -->
+                <div id="bundleCollections"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+### CSS Styling
+
+Essential styles for a professional-looking bundle widget:
+
+```css
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.info {
+    background-color: #e7f3ff;
+    border: 1px solid #b6d7ff;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+/* Collection Layout */
+.collection-section {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+/* Product Grid */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.product-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: box-shadow 0.2s;
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.product-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.product-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.product-price {
+    color: #007bff;
+    font-weight: bold;
+}
+
+/* Quantity Controls */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.quantity-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.quantity-btn:hover {
+    background: #0056b3;
+}
+
+.quantity-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.quantity-display {
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* Bundle Summary */
+.bundle-summary {
+    background: #e8f4fd;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+/* Validation Messages */
+.validation-error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+.validation-success {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 5px 0;
+}
+```
+
+### JavaScript Implementation
+
+Complete JavaScript implementation with all features:
+
+```javascript
+// Bundle selection state management
+let bundleSelections = {
+    variantId: null,
+    variant: null,
+    items: [],
+    totalItems: 0,
+    isValid: false,
+    errors: []
+};
+
+// Shopify client
+let shopifyClient = null;
+
+// Initialize Shopify client
+function initializeShopifyClient() {
+    shopifyClient = ShopifyStorefrontAPIClient.createStorefrontApiClient({
+        storeDomain: 'https://your-store.myshopify.com',
+        apiVersion: '2025-01',
+        publicAccessToken: 'your-storefront-access-token'
+    });
+}
+
+// Validation functions
+function validateBundleSize(selections, ranges) {
+    if (!ranges || ranges.length === 0) return true;
+    
+    const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
+    const range = ranges[0];
+    
+    const minRequired = range.quantity_min || 0;
+    const maxAllowed = range.quantity_max || Infinity;
+    
+    return totalItems >= minRequired && totalItems <= maxAllowed;
+}
+
+function getValidationErrors(selections, variant) {
+    const errors = [];
+    if (!variant) return errors;
+    
+    const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Check bundle size constraints
+    if (variant.ranges && variant.ranges.length > 0) {
+        const range = variant.ranges[0];
+        const minRequired = range.quantity_min || 0;
+        const maxAllowed = range.quantity_max || Infinity;
+        
+        if (totalItems < minRequired) {
+            errors.push(`Bundle must contain at least ${minRequired} items total. Currently: ${totalItems}`);
+        }
+        if (totalItems > maxAllowed) {
+            errors.push(`Bundle cannot exceed ${maxAllowed} items total. Currently: ${totalItems}`);
+        }
+    }
+    
+    // Check collection constraints
+    variant.collections.forEach((collection, index) => {
+        const collectionItems = selections.filter(item => 
+            item.collectionId === collection.collectionId
+        );
+        const totalFromCollection = collectionItems.reduce((sum, item) => sum + item.quantity, 0);
+        
+        const minRequired = collection.quantityMin || 0;
+        const maxAllowed = collection.quantityMax || Infinity;
+        
+        if (minRequired > 0 && totalFromCollection < minRequired) {
+            errors.push(`Collection ${index + 1} requires at least ${minRequired} items. Currently: ${totalFromCollection}`);
+        }
+        if (maxAllowed < Infinity && totalFromCollection > maxAllowed) {
+            errors.push(`Collection ${index + 1} cannot exceed ${maxAllowed} items. Currently: ${totalFromCollection}`);
+        }
+    });
+    
+    return errors;
+}
+
+// Update item quantity
+function updateItemQuantity(productId, variantId, collectionId, change, productData) {
+    const existingItemIndex = bundleSelections.items.findIndex(item => 
+        item.productId === productId && item.variantId === variantId
+    );
+    
+    if (existingItemIndex >= 0) {
+        bundleSelections.items[existingItemIndex].quantity += change;
+        
+        if (bundleSelections.items[existingItemIndex].quantity <= 0) {
+            bundleSelections.items.splice(existingItemIndex, 1);
+        }
+    } else if (change > 0) {
+        bundleSelections.items.push({
+            productId: productId,
+            variantId: variantId,
+            quantity: change,
+            collectionId: collectionId,
+            title: productData.title,
+            price: productData.priceRange.minVariantPrice.amount,
+            currencyCode: productData.priceRange.minVariantPrice.currencyCode
+        });
+    }
+    
+    // Recalculate totals and validation
+    bundleSelections.totalItems = bundleSelections.items.reduce((sum, item) => sum + item.quantity, 0);
+    bundleSelections.errors = getValidationErrors(bundleSelections.items, bundleSelections.variant);
+    bundleSelections.isValid = bundleSelections.errors.length === 0 && bundleSelections.totalItems > 0;
+    
+    updateProductQuantityDisplay(productId, variantId);
+    updateBundleSummary();
+}
+
+// Update UI displays
+function updateProductQuantityDisplay(productId, variantId) {
+    const currentQty = getCurrentQuantity(productId, variantId);
+    const productElements = document.querySelectorAll(`[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
+    
+    productElements.forEach(element => {
+        const quantityDisplay = element.querySelector('.quantity-display');
+        if (quantityDisplay) {
+            quantityDisplay.textContent = currentQty;
+        }
+        
+        const minusButton = element.querySelector('.quantity-btn-minus');
+        if (minusButton) {
+            minusButton.disabled = currentQty <= 0;
+        }
+    });
+}
+
+function updateBundleSummary() {
+    const summaryContent = document.getElementById('summaryContent');
+    const validationMessages = document.getElementById('validationMessages');
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const bundleSummary = document.getElementById('bundleSummary');
+    
+    if (bundleSelections.items.length === 0) {
+        bundleSummary.style.display = 'none';
+        return;
+    }
+    
+    bundleSummary.style.display = 'block';
+    
+    // Display selected items
+    const totalPrice = bundleSelections.items.reduce((sum, item) => 
+        sum + (parseFloat(item.price) * item.quantity), 0
+    );
+    
+    summaryContent.innerHTML = `
+        <div><strong>Selected Items:</strong></div>
+        ${bundleSelections.items.map(item => `
+            <div style="margin: 5px 0; padding: 5px; background: white; border-radius: 4px;">
+                ${item.title} × ${item.quantity} = $${(parseFloat(item.price) * item.quantity).toFixed(2)}
+            </div>
+        `).join('')}
+        <div style="margin-top: 10px; font-weight: bold;">
+            Total Items: ${bundleSelections.totalItems} | 
+            Total Price: $${totalPrice.toFixed(2)} ${bundleSelections.items[0]?.currencyCode || 'USD'}
+        </div>
+    `;
+    
+    // Display validation messages
+    if (bundleSelections.errors.length > 0) {
+        validationMessages.innerHTML = bundleSelections.errors.map(error => 
+            `<div class="validation-error">${error}</div>`
+        ).join('');
+    } else if (bundleSelections.totalItems > 0) {
+        validationMessages.innerHTML = '<div class="validation-success">✅ Bundle is valid and ready to add to cart!</div>';
+    } else {
+        validationMessages.innerHTML = '';
+    }
+    
+    // Update add to cart button
+    addToCartBtn.disabled = !bundleSelections.isValid;
+    addToCartBtn.style.background = bundleSelections.isValid ? '#28a745' : '#ccc';
+}
+
+// Main initialization
+async function initializeBundleWidget() {
+    try {
+        // Initialize clients
+        initializeShopifyClient();
+        await recharge.init({
+            storeIdentifier: 'your-store.myshopify.com',
+            appName: 'Bundle Widget',
+            appVersion: '1.0.0'
+        });
+        
+        // Load bundle settings
+        const bundleSettings = await recharge.cdn.getCDNBundleSettings('your-product-id');
+        const variantCollections = getVariantCollections(bundleSettings);
+        
+        // Setup widget
+        populateBundleVariantPicker(variantCollections);
+        setupEventListeners(variantCollections);
+        
+        // Auto-select first variant
+        if (variantCollections.length > 0) {
+            await displayBundleContent(variantCollections[0]);
+        }
+        
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('bundleWidget').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error initializing bundle widget:', error);
+    }
+}
+
+// Start the widget
+initializeBundleWidget();
+```
+
+### Key Features Implemented
+
+1. **Real-time Validation**: Validates bundle constraints as users make selections
+2. **Dynamic Pricing**: Shows total price updates in real-time
+3. **Collection Rules**: Enforces per-collection min/max constraints
+4. **Bundle Size Rules**: Enforces total bundle size constraints
+5. **Visual Feedback**: Clear success/error states with helpful messages
+6. **Responsive Design**: Works on desktop and mobile devices
+7. **Accessibility**: Proper labels and keyboard navigation
+8. **Error Handling**: Graceful error handling and user feedback
+
+### Integration Tips
+
+1. **Configuration**: Update store domain, product ID, and access token
+2. **Styling**: Customize CSS to match your site's design
+3. **Cart Integration**: Implement actual cart functionality in the add to cart handler
+4. **Error Handling**: Add proper error boundaries and fallbacks
+5. **Loading States**: Implement appropriate loading indicators
+6. **Analytics**: Add tracking for bundle interactions and conversions
+
+### Production Considerations
+
+- **Performance**: Implement caching for bundle settings and product data
+- **SEO**: Ensure proper meta tags and structured data
+- **Security**: Validate all user inputs and API responses
+- **Testing**: Test all bundle rule combinations thoroughly
+- **Monitoring**: Add error tracking and performance monitoring
+- **Accessibility**: Ensure WCAG compliance for all interactive elements
+
+## Working with Shopify Metafields in Bundle Widgets
+
+### Overview
+
+Shopify metafields allow you to store additional custom data on products, collections, and other resources. When building bundle widgets, metafields can provide rich product information like dietary preferences, allergen information, and custom badges that enhance the shopping experience.
+
+### Common Use Cases
+
+**Example Scenario: Meal Prep Company**
+
+Say you are a meal prep company and have metafields with allergies or dietary preferences. You can use the enhanced bundle widget to:
+
+- Display dietary badges (Keto, Vegan, Gluten-Free) on product images
+- Show allergen warnings (Contains Nuts, Dairy-Free) as pills below product titles
+- Create custom badges (NEW, BEST SELLER, CHEF'S CHOICE) for promotional items
+- Filter products by dietary restrictions in real-time
+- Display detailed nutritional information in product modals
+
+### Setting Up Metafields
+
+#### 1. Metafield Structure for Meal Prep
+
+Create these metafields in your Shopify Admin:
+
+**Dietary Preferences** (`shopify.dietary-preferences`)
+- Type: `list.metaobject_reference`
+- Metaobject Definition: `dietary_preference`
+- Fields: `label` (text), `description` (text)
+
+**Allergen Information** (`shopify.allergen-information`) 
+- Type: `list.metaobject_reference`
+- Metaobject Definition: `allergen_info`
+- Fields: `label` (text), `severity` (text)
+
+**Product Badges** (`custom.badge`)
+- Type: `list.metaobject_reference`
+- Metaobject Definition: `product_badge`
+- Fields: `label` (text), `background` (color), `text_color` (color)
+
+#### 2. Enhanced GraphQL Query with Pagination
+
+Update your Shopify Storefront API query to include metafields and pagination support. Since collections can contain more than 250 products, you need to implement pagination to load all products:
+
+```graphql
+query getCollectionWithMetafields($id: ID!, $first: Int!, $after: String) {
+    collection(id: $id) {
+        id
+        title
+        description
+        products(first: $first, after: $after) {
+            edges {
+                node {
+                    id
+                    title
+                    description
+                    # Dietary preferences metafield
+                    dietaryPreferences: metafield(namespace: "shopify", key: "dietary-preferences") {
+                        id
+                        type
+                        references(first: 10) {
+                            nodes {
+                                ... on Metaobject {
+                                    id
+                                    fields {
+                                        key
+                                        value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    # Allergen information metafield
+                    allergenInformation: metafield(namespace: "shopify", key: "allergen-information") {
+                        id
+                        type
+                        references(first: 10) {
+                            nodes {
+                                ... on Metaobject {
+                                    id
+                                    fields {
+                                        key
+                                        value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    # Product badges metafield
+                    badges: metafield(namespace: "custom", key: "badge") {
+                        id
+                        type
+                        references(first: 10) {
+                            nodes {
+                                ... on Metaobject {
+                                    id
+                                    fields {
+                                        key
+                                        value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    # Standard product fields
+                    images(first: 5) {
+                        edges {
+                            node {
+                                url
+                                altText
+                            }
+                        }
+                    }
+                    variants(first: 100) {
+                        edges {
+                            node {
+                                id
+                                price {
+                                    amount
+                                    currencyCode
+                                }
+                                availableForSale
+                            }
+                        }
+                    }
+                }
+            }
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+        }
+    }
+}
+```
+
+### Loading All Products with Pagination
+
+Since Shopify limits each GraphQL request to a maximum of 250 resources, you need to implement pagination to load all products from large collections. Here's how to handle pagination:
+
+```javascript
+/**
+ * Fetch all products from a collection using pagination
+ * @param {string} collectionId - Shopify collection ID
+ * @returns {Promise<Object>} Collection data with all products
+ */
+async function fetchAllProductsFromCollection(collectionId) {
+    const collectionGid = `gid://shopify/Collection/${collectionId}`;
+    let allProducts = [];
+    let hasNextPage = true;
+    let cursor = null;
+    let pageCount = 0;
+    const startTime = Date.now();
+
+    console.log(`🔄 Loading collection ${collectionId}...`);
+
+    while (hasNextPage) {
+        pageCount++;
+        console.log(`📄 Loading page ${pageCount} for collection ${collectionId}`);
+
+        const response = await shopifyClient.request(COLLECTION_QUERY, {
+            variables: {
+                id: collectionGid,
+                first: 250, // Maximum allowed per request
+                after: cursor
+            }
+        });
+
+        const collection = response.data?.collection;
+        if (!collection) {
+            console.warn(`⚠️ Collection ${collectionId} not found`);
+            return null;
+        }
+
+        // Add products from this page
+        const products = collection.products.edges || [];
+        allProducts = allProducts.concat(products);
+
+        // Check pagination
+        const pageInfo = collection.products.pageInfo;
+        hasNextPage = pageInfo.hasNextPage;
+        cursor = pageInfo.endCursor;
+
+        console.log(`✅ Page ${pageCount} loaded: ${products.length} products (total: ${allProducts.length})`);
+
+        // Store collection metadata from first page
+        if (pageCount === 1) {
+            var collectionMeta = {
+                id: collection.id,
+                title: collection.title,
+                handle: collection.handle,
+                description: collection.description
+            };
+        }
+    }
+
+    const loadTime = Date.now() - startTime;
+    console.log(`🎯 Collection ${collectionId} loaded completely:`, {
+        title: collectionMeta.title,
+        totalProducts: allProducts.length,
+        totalPages: pageCount,
+        loadTimeMs: loadTime
+    });
+
+    // Return collection with all products
+    return {
+        ...collectionMeta,
+        products: {
+            edges: allProducts
+        }
+    };
+}
+```
+
+### Pagination Performance Considerations
+
+According to [Shopify's documentation](https://shopify.dev/docs/api/usage/pagination-graphql#search-performance-considerations), when paginating large collections:
+
+1. **Maximum per request**: 250 resources is the maximum allowed per GraphQL request
+2. **Performance optimization**: For better performance, avoid using search filters with different sort keys
+3. **Cursor-based pagination**: Use `hasNextPage`, `endCursor`, and `after` for efficient pagination
+4. **Memory management**: For very large collections (1000+ products), consider implementing lazy loading or virtual scrolling
+
+### Real-world Example Output
+
+When loading a large collection, you'll see console output like this:
+
+```
+🔄 Loading collection 400595910908...
+📄 Loading page 1 for collection 400595910908
+✅ Page 1 loaded: 250 products (total: 250)
+📄 Loading page 2 for collection 400595910908 (cursor: eyJsYXN0X2lkIjo3...)
+✅ Page 2 loaded: 250 products (total: 500)
+📄 Loading page 3 for collection 400595910908 (cursor: eyJsYXN0X2lkIjo4...)
+✅ Page 3 loaded: 180 products (total: 680)
+🎯 Collection 400595910908 loaded completely: {
+  title: "Breakfast Collection",
+  totalProducts: 680,
+  totalPages: 3,
+  loadTimeMs: 1247
+}
+```
+
+### JavaScript Implementation
+
+#### 1. Metafield Extraction Functions
+
+```javascript
+/**
+ * Extract values from metaobject reference metafields
+ */
+function extractMetafieldValues(metafield) {
+    if (!metafield || metafield.type !== 'list.metaobject_reference') {
+        return [];
+    }
+    
+    const values = [];
+    
+    if (metafield.references && metafield.references.nodes) {
+        metafield.references.nodes.forEach(node => {
+            if (node.fields) {
+                const labelField = node.fields.find(f => f.key === 'label');
+                if (labelField) {
+                    values.push(labelField.value);
+                }
+            }
+        });
+    }
+    
+    return values.filter(Boolean);
+}
+
+/**
+ * Extract badge data with styling information
+ */
+function extractBadgeData(metafield) {
+    if (!metafield || metafield.type !== 'list.metaobject_reference') {
+        return [];
+    }
+
+    const badges = [];
+
+    if (metafield.references && metafield.references.nodes) {
+        metafield.references.nodes.forEach(node => {
+            if (node.fields) {
+                const badge = {};
+                
+                node.fields.forEach(field => {
+                    if (field.key === 'label') {
+                        badge.label = field.value;
+                    } else if (field.key === 'background') {
+                        badge.background = field.value;
+                    } else if (field.key === 'text_color') {
+                        badge.textColor = field.value;
+                    }
+                });
+
+                if (badge.label && badge.background && badge.textColor) {
+                    badges.push(badge);
+                }
+            }
+        });
+    }
+
+    return badges;
+}
+
+/**
+ * Create product pills for dietary/allergen display
+ */
+function createProductPills(product) {
+    const pills = [];
+    
+    // Extract dietary preferences
+    if (product.dietaryPreferences) {
+        const dietaryValues = extractMetafieldValues(product.dietaryPreferences);
+        dietaryValues.forEach(value => {
+            pills.push({
+                text: value,
+                type: 'dietary',
+                cssClass: value.toLowerCase().replace(/[^a-z0-9]/g, '-')
+            });
+        });
+    }
+    
+    // Extract allergen information
+    if (product.allergenInformation) {
+        const allergenValues = extractMetafieldValues(product.allergenInformation);
+        allergenValues.forEach(value => {
+            pills.push({
+                text: value,
+                type: 'allergen',
+                cssClass: value.toLowerCase().replace(/[^a-z0-9]/g, '-')
+            });
+        });
+    }
+    
+    return pills;
+}
+```
+
+#### 2. Rendering Functions
+
+```javascript
+/**
+ * Render product badges for image overlay
+ */
+function renderProductBadges(badges) {
+    if (!badges || badges.length === 0) {
+        return '<div class="product-badges"></div>';
+    }
+
+    const badgesHTML = badges.map(badge => {
+        const style = `background-color: ${badge.background}; color: ${badge.textColor};`;
+        return `<span class="product-badge" style="${style}">${badge.label}</span>`;
+    }).join('');
+
+    return `<div class="product-badges">${badgesHTML}</div>`;
+}
+
+/**
+ * Render product pills for dietary/allergen info
+ */
+function renderProductPills(pills) {
+    if (!pills || pills.length === 0) {
+        return '<div class="product-pills"></div>';
+    }
+    
+    const pillsHTML = pills.map(pill => 
+        `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
+    ).join('');
+    
+    return `<div class="product-pills">${pillsHTML}</div>`;
+}
+```
+
+#### 3. Product Card Integration
+
+```javascript
+// In your product rendering function
+const pills = createProductPills(product);
+const badges = extractBadgeData(product.badges);
+const pillsHTML = renderProductPills(pills);
+const badgesHTML = renderProductBadges(badges);
+
+const productHTML = `
+    <div class="product-card">
+        <div class="product-image-container">
+            <img src="${product.images.edges[0]?.node?.url}" alt="${product.title}">
+            ${badgesHTML}
+        </div>
+        <h4 class="product-title">${product.title}</h4>
+        ${pillsHTML}
+        <p class="product-description">${product.description}</p>
+        <div class="product-price">$${product.variants.edges[0]?.node?.price.amount}</div>
+        <!-- Add to bundle controls -->
+    </div>
+`;
+```
+
+### CSS Styling for Metafield Content
+
+```css
+/* Product Pills */
+.product-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+    min-height: 20px;
+}
+
+.pill {
+    display: inline-block;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+.pill.dietary {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.pill.allergen {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+/* Product Badges */
+.product-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 16px);
+}
+
+.product-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    line-height: 1.2;
+}
+```
+
+### Product Detail Modal Integration
+
+For enhanced user experience, create a modal that shows detailed metafield information:
+
+```javascript
+function openProductModal(product) {
+    // Set dietary preferences
+    const dietarySection = document.getElementById('modal-dietary-section');
+    const dietaryItems = document.getElementById('modal-dietary-items');
+    
+    if (product.dietaryPreferences) {
+        const dietaryValues = extractMetafieldValues(product.dietaryPreferences);
+        if (dietaryValues.length > 0) {
+            dietaryItems.innerHTML = dietaryValues.map(value => 
+                `<span class="detail-item dietary">${value}</span>`
+            ).join('');
+            dietarySection.style.display = 'block';
+        }
+    }
+    
+    // Set allergen information
+    const allergenSection = document.getElementById('modal-allergen-section');
+    const allergenItems = document.getElementById('modal-allergen-items');
+    
+    if (product.allergenInformation) {
+        const allergenValues = extractMetafieldValues(product.allergenInformation);
+        if (allergenValues.length > 0) {
+            allergenItems.innerHTML = allergenValues.map(value => 
+                `<span class="detail-item allergen">${value}</span>`
+            ).join('');
+            allergenSection.style.display = 'block';
+        }
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+}
+```
+
+### Benefits for Meal Prep Companies
+
+1. **Enhanced Product Discovery**: Customers can quickly identify suitable meals based on dietary restrictions
+2. **Trust Building**: Clear allergen information builds customer confidence
+3. **Visual Appeal**: Custom badges highlight featured items and promotions
+4. **Improved Filtering**: Real-time filtering by dietary preferences improves UX
+5. **Detailed Information**: Modal dialogs provide comprehensive nutritional details
+6. **Brand Consistency**: Custom styling maintains brand identity across the shopping experience
+
+This metafield integration transforms basic product listings into rich, informative experiences that help customers make informed decisions while building their custom meal bundles.
+
+## Adding Recharge Dynamic Bundles to Cart
+
+When customers complete their bundle selection, you need to add the bundle to the cart with the proper Recharge dynamic bundle structure. The implementation differs depending on whether you're using Shopify's Storefront GraphQL API or the traditional online store setup.
+
+### Bundle Cart Implementation
+
+When adding Recharge dynamic bundles to cart, **always use the Recharge SDK's `getDynamicBundleItems()` function**. This ensures proper bundle structure, linking, and compatibility with Recharge's system.
+
+**❌ Don't manually construct cart payloads**
+**✅ Use Recharge SDK to get properly formatted cart items**
+
+### Using Recharge SDK's getDynamicBundleItems()
+
+**IMPORTANT:** Always use the Recharge SDK's `getDynamicBundleItems()` function instead of manually constructing cart payloads. This ensures proper bundle structure and compatibility.
+
+#### 1. Convert Bundle Selections to Recharge Format
+
+```javascript
+/**
+ * Convert bundle selections to Recharge bundle format
+ */
+function convertToRechargeBundleFormat(bundleSelections) {
+    // Bundle product data
+    const bundleProductData = {
+        productId: '8138138353916', // Bundle product ID
+        variantId: bundleSelections.variant.externalVariantId.replace('gid://shopify/ProductVariant/', ''),
+        handle: 'bundle-product', // Bundle product handle
+        // sellingPlan: 2730066117, // Optional, exclude for now
+    };
+
+    // Bundle selections in Recharge format
+    const bundle = {
+        externalVariantId: bundleSelections.variant.externalVariantId.replace('gid://shopify/ProductVariant/', ''),
+        externalProductId: '8138138353916', // Bundle product ID
+        selections: bundleSelections.items.map(item => ({
+            collectionId: item.collectionId,
+            externalProductId: item.productId.replace('gid://shopify/Product/', ''),
+            externalVariantId: item.variantId.replace('gid://shopify/ProductVariant/', ''),
+            quantity: item.quantity,
+            // sellingPlan: 2730098885, // Optional, exclude for now
+        }))
+    };
+
+    return { bundle, bundleProductData };
+}
+```
+
+#### 2. Get Cart Items from Recharge SDK
+
+```javascript
+/**
+ * Get properly formatted cart items using Recharge SDK
+ */
+async function getRechargeCartItems(bundleSelections) {
+    const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+    
+    // Use Recharge SDK to get cart items
+    const cartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+    
+    return cartItems;
+}
+```
+
+### Implementation for Storefront GraphQL API
+
+For headless implementations or custom storefronts using Shopify's Storefront GraphQL API:
+
+#### 1. GraphQL Mutation for Cart Creation
+
+```graphql
+mutation cartCreate($input: CartInput!) {
+    cartCreate(input: $input) {
+        cart {
+            id
+            checkoutUrl
+            estimatedCost {
+                totalAmount {
+                    amount
+                    currencyCode
+                }
+            }
+            lines(first: 100) {
+                edges {
+                    node {
+                        id
+                        quantity
+                        estimatedCost {
+                            totalAmount {
+                                amount
+                                currencyCode
+                            }
+                        }
+                        merchandise {
+                            ... on ProductVariant {
+                                id
+                                title
+                                product {
+                                    title
+                                }
+                            }
+                        }
+                        attributes {
+                            key
+                            value
+                        }
+                    }
+                }
+            }
+        }
+        userErrors {
+            field
+            message
+        }
+    }
+}
+```
+
+#### 2. Convert Recharge Items to GraphQL Format
+
+```javascript
+/**
+ * Convert Recharge cart items to GraphQL format
+ * Note: IDs from Recharge SDK are already strings, ready for GraphQL
+ */
+function convertRechargeItemsToGraphQL(rechargeCartItems) {
+    return rechargeCartItems.map(item => ({
+        merchandiseId: `gid://shopify/ProductVariant/${item.id}`, // ID already a string
+        quantity: item.quantity,
+        attributes: Object.entries(item.properties || {}).map(([key, value]) => ({
+            key,
+            value: String(value)
+        }))
+    }));
+}
+```
+
+#### 3. JavaScript Implementation for GraphQL
+
+```javascript
+/**
+ * Add bundle to cart using Storefront GraphQL API
+ */
+async function addBundleToCartGraphQL(bundleSelections) {
+    try {
+        console.log('🛒 Adding bundle to cart via GraphQL...', bundleSelections);
+        
+        // Convert to Recharge bundle format
+        const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+        
+        // Get cart items from Recharge SDK
+        const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+        console.log('🔧 Recharge cart items:', rechargeCartItems);
+        
+        // Convert to GraphQL format
+        const cartLines = convertRechargeItemsToGraphQL(rechargeCartItems);
+        
+        const cartCreateMutation = `
+            mutation cartCreate($input: CartInput!) {
+                cartCreate(input: $input) {
+                    cart {
+                        id
+                        checkoutUrl
+                        estimatedCost {
+                            totalAmount {
+                                amount
+                                currencyCode
+                            }
+                        }
+                        lines(first: 100) {
+                            edges {
+                                node {
+                                    id
+                                    quantity
+                                    merchandise {
+                                        ... on ProductVariant {
+                                            id
+                                            title
+                                            product {
+                                                title
+                                            }
+                                        }
+                                    }
+                                    attributes {
+                                        key
+                                        value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }
+        `;
+        
+        const response = await shopifyClient.request(cartCreateMutation, {
+            variables: {
+                input: {
+                    lines: cartLines
+                }
+            }
+        });
+        
+        if (response.data?.cartCreate?.userErrors?.length > 0) {
+            throw new Error('Cart creation failed: ' + response.data.cartCreate.userErrors.map(e => e.message).join(', '));
+        }
+        
+        const cart = response.data?.cartCreate?.cart;
+        if (!cart) {
+            throw new Error('Failed to create cart');
+        }
+        
+        console.log('✅ Bundle added to cart successfully:', {
+            cartId: cart.id,
+            checkoutUrl: cart.checkoutUrl,
+            totalCost: cart.estimatedCost?.totalAmount?.amount,
+            itemCount: cart.lines.edges.length
+        });
+        
+        // Redirect to checkout
+        window.location.href = cart.checkoutUrl;
+        
+        return cart;
+        
+    } catch (error) {
+        console.error('❌ Error adding bundle to cart:', error);
+        alert('Failed to add bundle to cart. Please try again.');
+        throw error;
+    }
+}
+```
+
+### Implementation for Shopify Online Store
+
+For traditional Shopify theme implementations using the Ajax Cart API:
+
+#### 1. Add Bundle to Cart using Recharge SDK
+
+```javascript
+/**
+ * Add bundle to cart using Shopify Ajax Cart API with Recharge SDK
+ */
+async function addBundleToCartAjax(bundleSelections) {
+    try {
+        console.log('🛒 Adding bundle to cart via Ajax...', bundleSelections);
+        
+        // Convert to Recharge bundle format
+        const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
+        
+        // Get cart items from Recharge SDK
+        const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+        console.log('🔧 Recharge cart items:', rechargeCartItems);
+        
+        const cartData = { items: rechargeCartItems };
+        
+        const response = await fetch(window.Shopify.routes.root + 'cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cartData),
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || errorData.description || 'Failed to add to cart');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Bundle added to cart successfully:', result);
+        
+        // Redirect to cart page
+        window.location.href = '/cart';
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Error adding bundle to cart:', error);
+        alert('Failed to add bundle to cart. Please try again.');
+        throw error;
+    }
+}
+```
+
+### Unified Cart Handler
+
+To support both implementations, create a unified handler that detects the environment:
+
+```javascript
+/**
+ * Detect if Shopify routes object is available (online store)
+ */
+function isShopifyOnlineStore() {
+    return typeof window !== 'undefined' && 
+           window.Shopify && 
+           window.Shopify.routes;
+}
+
+/**
+ * Universal bundle cart handler
+ */
+async function addBundleToCart(bundleSelections) {
+    if (!bundleSelections.isValid) {
+        alert('Please complete your bundle selection before adding to cart.');
+        return;
+    }
+    
+    // Disable add to cart button during processing
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const originalText = addToCartBtn.textContent;
+    addToCartBtn.disabled = true;
+    addToCartBtn.textContent = 'Adding to Cart...';
+    
+    try {
+        if (isShopifyOnlineStore()) {
+            // Use Ajax Cart API for online store
+            await addBundleToCartAjax(bundleSelections);
+        } else {
+            // Use Storefront GraphQL API for headless/custom implementations
+            await addBundleToCartGraphQL(bundleSelections);
+        }
+    } catch (error) {
+        // Re-enable button on error
+        addToCartBtn.disabled = false;
+        addToCartBtn.textContent = originalText;
+    }
+}
+
+// Event listener for add to cart button
+document.getElementById('addToCartBtn').addEventListener('click', () => {
+    addBundleToCart(bundleSelections);
+});
+```
+
+### Complete Updated Bundle Summary Function
+
+Update your bundle summary function to integrate the cart functionality:
+
+```javascript
+function updateBundleSummary() {
+    const summaryContent = document.getElementById('summaryContent');
+    const validationMessages = document.getElementById('validationMessages');
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const bundleSummary = document.getElementById('bundleSummary');
+    
+    if (bundleSelections.items.length === 0) {
+        bundleSummary.style.display = 'none';
+        return;
+    }
+    
+    bundleSummary.style.display = 'block';
+    
+    // Display selected items
+    const totalPrice = bundleSelections.items.reduce((sum, item) => 
+        sum + (parseFloat(item.price) * item.quantity), 0
+    );
+    
+    summaryContent.innerHTML = `
+        <div><strong>Selected Items:</strong></div>
+        ${bundleSelections.items.map(item => `
+            <div style="margin: 5px 0; padding: 5px; background: white; border-radius: 4px;">
+                ${item.title} × ${item.quantity} = $${(parseFloat(item.price) * item.quantity).toFixed(2)}
+            </div>
+        `).join('')}
+        <div style="margin-top: 10px; font-weight: bold;">
+            Total Items: ${bundleSelections.totalItems} | 
+            Total Price: $${totalPrice.toFixed(2)} ${bundleSelections.items[0]?.currencyCode || 'USD'}
+        </div>
+    `;
+    
+    // Display validation messages
+    if (bundleSelections.errors.length > 0) {
+        validationMessages.innerHTML = bundleSelections.errors.map(error => 
+            `<div class="validation-error">${error}</div>`
+        ).join('');
+    } else if (bundleSelections.totalItems > 0) {
+        validationMessages.innerHTML = '<div class="validation-success">✅ Bundle is valid and ready to add to cart!</div>';
+    } else {
+        validationMessages.innerHTML = '';
+    }
+    
+    // Update add to cart button
+    addToCartBtn.disabled = !bundleSelections.isValid;
+    addToCartBtn.style.background = bundleSelections.isValid ? '#28a745' : '#ccc';
+}
+```
+
+### Important Notes
+
+1. **Use Recharge SDK**: Always use `recharge.bundle.getDynamicBundleItems()` instead of manual construction
+2. **Variant ID Format**: GraphQL uses full GIDs while Ajax Cart uses numeric IDs  
+3. **Bundle Product Handle**: Ensure you have the correct bundle product handle for `getDynamicBundleItems()`
+4. **Error Handling**: Implement proper error handling for both cart APIs
+5. **Loading States**: Show loading indicators during cart operations
+6. **Selling Plans**: Exclude `sellingPlan` parameter for now as mentioned
+
+### Testing Your Implementation
+
+Test the cart functionality with actual bundle selections from your widget:
+
+```javascript
+// Example of testing with real bundle data
+// (This would come from actual user selections in your widget)
+console.log('Current bundle selections:', bundleSelections);
+
+// Test the cart functionality 
+// This will use the Recharge SDK to get proper cart items
+if (bundleSelections.isValid) {
+    addBundleToCart(bundleSelections);
+} else {
+    console.log('Bundle not valid:', bundleSelections.errors);
+}
+```
+
+### Recharge SDK Output Structure
+
+The `recharge.bundle.getDynamicBundleItems()` function returns cart items with this actual structure:
+
+```javascript
+[
+  {
+    "id": "43650317451516",  // String variant ID (not numeric)
+    "quantity": 5,
+    "properties": {
+      "_rc_bundle": "npC1d-NSN:8138138353916",       // Bundle identifier
+      "_rc_bundle_variant": "44636069724412",        // Bundle variant ID
+      "_rc_bundle_parent": "bundle-product",         // Bundle product handle
+      "_rc_bundle_collection_id": "400595910908"     // Collection ID for this item
+    }
+  },
+  {
+    "id": "43650318696700",  // Another bundle item
+    "quantity": 2,
+    "properties": {
+      "_rc_bundle": "npC1d-NSN:8138138353916",       // Same bundle identifier
+      "_rc_bundle_variant": "44636069724412",        // Same bundle variant
+      "_rc_bundle_parent": "bundle-product",         // Same bundle handle
+      "_rc_bundle_collection_id": "400595910908"     // Collection for this item
+    }
+  }
+]
+```
+
+### Key Properties Explained:
+
+- **`id`**: Shopify variant ID as string (ready for cart APIs)
+- **`quantity`**: Number of this variant to add to cart
+- **`_rc_bundle`**: Unique bundle identifier (format: `{hash}:{bundle_product_id}`)
+- **`_rc_bundle_variant`**: The bundle product's variant ID
+- **`_rc_bundle_parent`**: Bundle product handle
+- **`_rc_bundle_collection_id`**: Source collection ID for this item
+
+### Important Notes:
+
+1. **Variant IDs are strings**, not numbers (works directly with both GraphQL and Ajax Cart)
+2. **Recharge uses `_rc_bundle` prefix** for all bundle-related properties
+3. **All items share the same `_rc_bundle` identifier** to link them together
+4. **No manual bundle ID generation needed** - Recharge SDK handles everything
+5. **Only bundle items are returned** - The SDK returns the actual products to add to cart, not the bundle product itself
+6. **Ready for direct use** - These items can be passed directly to cart APIs without modification
+
+This implementation provides a robust solution for adding Recharge dynamic bundles to cart in both Shopify online store and headless/custom implementations using the official Recharge SDK.
+
+## Production Checklist & Critical Requirements
+
+Use this checklist to ensure your bundle widget meets all requirements for production deployment:
+
+### 🔧 Technical Implementation
+
+**SDK Integration:**
+- [ ] Include Recharge SDK: `https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js`
+- [ ] Include Shopify Storefront API Client: `https://unpkg.com/@shopify/storefront-api-client@1.0.9/dist/umd/storefront-api-client.min.js`
+- [ ] Initialize both SDKs with proper configuration
+- [ ] Handle SDK loading errors gracefully
+
+**Bundle Configuration:**
+- [ ] Extract bundle settings from Recharge: `recharge.cdn.getCDNBundleSettings()`
+- [ ] Parse variant collections using `getVariantCollections()`
+- [ ] Extract constraints from settings (don't hardcode rules)
+- [ ] Handle missing or invalid bundle configurations
+
+**Product Loading:**
+- [ ] Implement pagination for large collections (`fetchAllProductsFromCollection()`)
+- [ ] Handle GraphQL query failures and timeouts
+- [ ] Display loading states during product fetching
+- [ ] Cache product data appropriately
+
+### 🛒 Cart Integration (CRITICAL)
+
+**Recharge Bundle Format:**
+- [ ] **ALWAYS use `recharge.bundle.getDynamicBundleItems(bundle, handle)`**
+- [ ] **NEVER manually construct cart payloads**
+- [ ] Convert selections to proper Recharge bundle format
+- [ ] Include all required bundle properties (`_rc_bundle`, `_rc_bundle_variant`, etc.)
+
+**Dual Cart Implementation:**
+- [ ] Auto-detect environment: `window.Shopify?.routes`
+- [ ] Implement Ajax Cart API for Shopify online store
+- [ ] Implement GraphQL `cartCreate` mutation for headless
+- [ ] Test both cart methods thoroughly
+- [ ] Handle cart API errors and provide user feedback
+
+**Cart Validation:**
+- [ ] Validate bundle before adding to cart
+- [ ] Show clear error messages for invalid bundles
+- [ ] Disable cart button for invalid selections
+- [ ] Test cart functionality with various bundle combinations
+
+### 🎨 User Experience
+
+**Code Quality:**
+- [ ] Clean onclick handlers (no complex objects in HTML attributes)
+- [ ] Store product data in Map/object, use simple function calls in HTML
+- [ ] Separate concerns: data, logic, and presentation
+- [ ] Implement proper error boundaries
+
+**Real-time Validation:**
+- [ ] Validate bundle constraints as users make selections
+- [ ] Show validation errors immediately with clear messaging
+- [ ] Display success states when bundle is valid
+- [ ] Update validation state on every selection change
+
+**Loading & Error States:**
+- [ ] Show loading indicators during async operations
+- [ ] Handle network failures gracefully
+- [ ] Provide retry mechanisms for failed operations
+- [ ] Display appropriate error messages to users
+
+**Visual Feedback:**
+- [ ] Highlight selected items clearly
+- [ ] Show quantity controls with proper disable states
+- [ ] Update bundle summary in real-time
+- [ ] Visual indication of bundle completion status
+
+### 📱 Responsive Design
+
+**Mobile Optimization:**
+- [ ] Test on mobile devices (iOS Safari, Android Chrome)
+- [ ] Ensure touch targets are appropriate size (44px minimum)
+- [ ] Optimize product grid for small screens
+- [ ] Test scrolling and modal interactions on mobile
+
+**Cross-browser Compatibility:**
+- [ ] Test in Chrome, Firefox, Safari, Edge
+- [ ] Verify ES6+ features have proper fallbacks
+- [ ] Test with JavaScript disabled (graceful degradation)
+- [ ] Validate HTML and CSS for standards compliance
+
+### ♿ Accessibility
+
+**Keyboard Navigation:**
+- [ ] All interactive elements are keyboard accessible
+- [ ] Focus indicators are visible and clear
+- [ ] Logical tab order throughout the widget
+- [ ] Modal dialogs trap focus appropriately
+
+**Screen Reader Support:**
+- [ ] Proper ARIA labels for all controls
+- [ ] Semantic HTML structure (headings, lists, forms)
+- [ ] Alt text for all product images
+- [ ] Status announcements for dynamic content changes
+
+**Visual Accessibility:**
+- [ ] Sufficient color contrast ratios (WCAG AA: 4.5:1)
+- [ ] Information not conveyed by color alone
+- [ ] Readable font sizes (minimum 16px on mobile)
+- [ ] Zoom support up to 200% without horizontal scroll
+
+### 🧪 Testing Requirements
+
+**Functional Testing:**
+- [ ] Test all bundle rule combinations (min/max constraints)
+- [ ] Verify cart integration with actual purchases
+- [ ] Test with empty collections and missing products
+- [ ] Validate error scenarios and edge cases
+
+**Performance Testing:**
+- [ ] Test with large collections (1000+ products)
+- [ ] Measure and optimize bundle loading times
+- [ ] Test pagination performance with slow connections
+- [ ] Verify memory usage doesn't grow over time
+
+**Integration Testing:**
+- [ ] Test with actual Shopify store and Recharge setup
+- [ ] Verify bundle appears correctly in cart and checkout
+- [ ] Test with real payment processing
+- [ ] Validate analytics tracking (if implemented)
+
+### 🔒 Security & Data
+
+**Data Validation:**
+- [ ] Validate all user inputs before processing
+- [ ] Sanitize product data from external APIs
+- [ ] Handle malformed API responses safely
+- [ ] Validate bundle configuration before use
+
+**API Security:**
+- [ ] Use read-only API tokens where possible
+- [ ] Implement proper CORS handling
+- [ ] Rate limit API calls to prevent abuse
+- [ ] Log errors without exposing sensitive data
+
+### 📊 Monitoring & Analytics
+
+**Error Tracking:**
+- [ ] Implement error logging for production issues
+- [ ] Track bundle validation failures
+- [ ] Monitor API failure rates
+- [ ] Set up alerts for critical errors
+
+**Performance Monitoring:**
+- [ ] Track bundle loading times
+- [ ] Monitor cart conversion rates
+- [ ] Measure user engagement metrics
+- [ ] Track most popular bundle combinations
+
+**User Analytics:**
+- [ ] Track bundle builder interactions
+- [ ] Monitor drop-off points in bundle flow
+- [ ] Measure time to complete bundle selection
+- [ ] Track successful vs abandoned bundles
+
+### 🚀 Production Deployment
+
+**Configuration Management:**
+- [ ] Use environment variables for store configuration
+- [ ] Separate development and production API endpoints
+- [ ] Implement proper staging environment testing
+- [ ] Version control all configuration changes
+
+**Performance Optimization:**
+- [ ] Minify and compress JavaScript and CSS
+- [ ] Optimize images for web delivery
+- [ ] Implement caching strategies for product data
+- [ ] Use CDN for static assets
+
+**SEO & Meta Data:**
+- [ ] Proper page titles and descriptions
+- [ ] Structured data for bundle products
+- [ ] Open Graph tags for social sharing
+- [ ] Canonical URLs for bundle pages
+
+This comprehensive checklist ensures your bundle widget is production-ready, accessible, and provides an excellent user experience across all devices and platforms.
