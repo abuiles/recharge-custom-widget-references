@@ -1,0 +1,16 @@
+I want to implement a custom bundle widget for my shopify store - I sell XX
+
+Here's my info:
+
+
+storeDomain "XXX.myshopify.com"
+storefrontAccessToken "XXX" <- REPLACE WITH A SHOPIFY STOREFRONT ACCESS TOKEN
+
+I want to create a bundle widget for my dynamic bundle with id 8138138353916  <-- REPLACE WITH ACTUAL PRODUCT ID FROM YOUR STORE
+
+use the instructions from @working_with_recharge_bundles_llms.txt to create the bundle.
+
+
+YOU CAN PASS AN IMAGE REFERENCE AND SAY SOMETHING LIKE:
+
+Use the attached image as inspiration - I want something with a similar layout.
