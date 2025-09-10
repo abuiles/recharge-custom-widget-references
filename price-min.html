@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Build Your Custom Food Bundle</title>
-    
+
     <!-- Recharge SDK CDN -->
     <script src="https://static.rechargecdn.com/assets/storefront/recharge-client-1.46.0.min.js"></script>
     <!-- Shopify Storefront API Client CDN -->
     <script src="https://unpkg.com/@shopify/storefront-api-client@1.0.9/dist/umd/storefront-api-client.min.js"></script>
-    
+
     <style>
         * {
             margin: 0;
@@ -606,7 +606,7 @@
             .bundle-layout {
                 grid-template-columns: 1fr;
             }
-            
+
             .bundle-summary {
                 position: static;
                 order: -1;
@@ -617,29 +617,29 @@
             .container {
                 padding: 15px;
             }
-            
+
             .header h1 {
                 font-size: 2rem;
             }
-            
+
             .variant-section {
                 padding: 20px;
             }
-            
+
             .bundle-layout {
                 padding: 20px;
                 gap: 20px;
             }
-            
+
             .products-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
                 gap: 20px;
             }
-            
+
             .collections-nav {
                 margin-bottom: 20px;
             }
-            
+
             .collection-tab {
                 padding: 10px 18px;
                 font-size: 0.9rem;
@@ -650,7 +650,7 @@
             .products-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .bundle-layout {
                 padding: 15px;
             }
@@ -997,20 +997,20 @@
             .modal-content {
                 grid-template-columns: 1fr;
             }
-            
+
             .modal-images {
                 border-radius: 20px 20px 0 0;
                 min-height: 300px;
             }
-            
+
             .modal-details {
                 padding: 30px 25px;
             }
-            
+
             .modal-title {
                 font-size: 1.5rem;
             }
-            
+
             .modal-main-image {
                 min-height: 250px;
                 padding: 20px;
@@ -1021,12 +1021,12 @@
             .modal-overlay {
                 padding: 10px;
             }
-            
+
             .product-modal {
                 border-radius: 15px;
                 max-height: 95vh;
             }
-            
+
             .modal-details {
                 padding: 25px 20px;
             }
@@ -1199,7 +1199,7 @@
             <h1>Build Your Custom Food Bundle</h1>
             <p>Create your perfect meal combination by selecting from our fresh, high-quality ingredients. Mix and match to build the bundle that suits your taste and dietary preferences.</p>
         </div>
-        
+
         <!-- Bundle Notification -->
         <div id="bundleNotification" class="bundle-notification">
             <span class="notification-icon">🎉</span>
@@ -1214,18 +1214,16 @@
 
         <!-- Main Bundle Widget -->
         <div id="bundleWidget" class="bundle-widget hidden">
-            <!-- Variant Selection Section -->
+            <!-- Bundle Info Section -->
             <div class="variant-section">
-                <h2>🍽️ Choose Your Bundle Size</h2>
-                <div class="variant-selector">
-                    <select id="bundleVariantSelect">
-                        <option value="">Select your preferred bundle size...</option>
-                    </select>
-                </div>
+                <h2>🍽️ Build Your Custom Bundle</h2>
+                <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 1.1rem;">
+                    Create your perfect meal combination. Start adding items to build your custom bundle!
+                </p>
             </div>
 
             <!-- Bundle Content -->
-            <div id="bundleContent" class="hidden">
+            <div id="bundleContent">
 
                 <!-- Main Layout -->
                 <div class="bundle-layout">
@@ -1242,7 +1240,7 @@
                                 <div class="mini-spinner"></div>
                                 <p>Loading products...</p>
                             </div>
-                            
+
                             <div id="productsGrid" class="products-grid">
                                 <!-- Products will be populated dynamically -->
                             </div>
@@ -1257,7 +1255,7 @@
                     <!-- Bundle Summary Sidebar -->
                     <div class="bundle-summary">
                         <h3>🛒 Your Bundle</h3>
-                        
+
                         <div class="summary-content" id="summaryContent">
                             <p style="color: #6c757d; text-align: center; padding: 20px 0;">
                                 Start adding items to see your bundle summary
@@ -1275,12 +1273,12 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Product Detail Modal -->
         <div id="productModal" class="modal-overlay" onclick="closeProductModal()">
             <div class="product-modal" onclick="event.stopPropagation()">
                 <button class="modal-close" onclick="closeProductModal()">×</button>
-                
+
                 <div class="modal-content">
                     <!-- Image Section -->
                     <div class="modal-images">
@@ -1294,12 +1292,12 @@
                             <!-- Thumbnails will be populated dynamically -->
                         </div>
                     </div>
-                    
+
                     <!-- Details Section -->
                     <div class="modal-details">
                         <h2 id="modalTitle" class="modal-title">Product Title</h2>
                         <div id="modalPrice" class="modal-price">$0.00</div>
-                        
+
                         <!-- Metafields Pills -->
                         <div id="modalDietarySection" class="modal-pills-section">
                             <h4>Dietary Information</h4>
@@ -1307,20 +1305,20 @@
                                 <!-- Dietary pills will be populated -->
                             </div>
                         </div>
-                        
+
                         <div id="modalAllergenSection" class="modal-pills-section">
                             <h4>Allergen Information</h4>
                             <div id="modalAllergenPills" class="modal-pills">
                                 <!-- Allergen pills will be populated -->
                             </div>
                         </div>
-                        
+
                         <!-- Description -->
                         <div id="modalDescriptionSection" class="modal-description">
                             <h4>Description</h4>
                             <p id="modalDescription">Product description will appear here.</p>
                         </div>
-                        
+
                         <!-- Quantity Controls -->
                         <div class="modal-quantity-section">
                             <h4>Add to Bundle</h4>
@@ -1347,9 +1345,16 @@
             storeIdentifier: 'rc-bundles.myshopify.com',
             storeDomain: 'https://rc-bundles.myshopify.com',
             storefrontAccessToken: 'ef69584f646c3ea0cfbe978d067d113d',
-            bundleProductId: '8138138353916',
-            appName: 'Custom Food Bundle Widget',
-            appVersion: '1.0.0'
+            bundleProductId: '9093209555196',
+            appName: 'Custom Bundle Widget',
+            appVersion: '1.0.0',
+            // Spend-based validation configuration
+            minimumSpend: 30.00, // Minimum spend required in USD
+            currency: 'USD',
+            enableSpendValidation: true, // Set to false to use item count validation instead
+            // Logging configuration
+            enableDetailedLogging: true, // Enable comprehensive logging for internal monitoring
+            logPrefix: '[Bundle Widget]' // Prefix for all log messages
         };
 
         // Global state
@@ -1363,9 +1368,55 @@
             variant: null,
             items: [],
             totalItems: 0,
+            totalSpend: 0,
             isValid: false,
             errors: []
         };
+
+        // Logging utility functions
+        function logInfo(message, data = null) {
+            if (CONFIG.enableDetailedLogging) {
+                if (data) {
+                    console.log(`${CONFIG.logPrefix} [INFO] ${message}`, data);
+                } else {
+                    console.log(`${CONFIG.logPrefix} [INFO] ${message}`);
+                }
+            }
+        }
+
+        function logWarning(message, data = null) {
+            if (CONFIG.enableDetailedLogging) {
+                if (data) {
+                    console.warn(`${CONFIG.logPrefix} [WARNING] ${message}`, data);
+                } else {
+                    console.warn(`${CONFIG.logPrefix} [WARNING] ${message}`);
+                }
+            }
+        }
+
+        function logError(message, error = null) {
+            if (CONFIG.enableDetailedLogging) {
+                if (error) {
+                    console.error(`${CONFIG.logPrefix} [ERROR] ${message}`, error);
+                } else {
+                    console.error(`${CONFIG.logPrefix} [ERROR] ${message}`);
+                }
+            }
+        }
+
+        function logBundleState(action, details = {}) {
+            if (CONFIG.enableDetailedLogging) {
+                logInfo(`Bundle State - ${action}`, {
+                    totalItems: bundleSelections.totalItems,
+                    totalSpend: bundleSelections.totalSpend,
+                    isValid: bundleSelections.isValid,
+                    errors: bundleSelections.errors,
+                    itemCount: bundleSelections.items.length,
+                    minimumSpend: CONFIG.minimumSpend,
+                    ...details
+                });
+            }
+        }
 
         // Initialize Shopify client
         function initializeShopifyClient() {
@@ -1528,14 +1579,14 @@
         // Fetch collection info (title, handle, description)
         async function fetchCollectionInfo(collectionId) {
             const collectionGid = `gid://shopify/Collection/${collectionId}`;
-            
+
             try {
                 const response = await shopifyClient.request(COLLECTION_INFO_QUERY, {
                     variables: {
                         id: collectionGid
                     }
                 });
-                
+
                 return response.data?.collection;
             } catch (error) {
                 console.error(`Error fetching collection info for ${collectionId}:`, error);
@@ -1613,46 +1664,73 @@
         // Bundle validation functions
         function validateBundleSize(selections, ranges) {
             if (!ranges || ranges.length === 0) return true;
-            
+
             const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
             const range = ranges[0];
-            
+
             const minRequired = range.quantity_min || 0;
             const maxAllowed = range.quantity_max || Infinity;
-            
+
             return totalItems >= minRequired && totalItems <= maxAllowed;
         }
 
         function getValidationErrors(selections, variant) {
             const errors = [];
             if (!variant) return errors;
-            
+
             const totalItems = selections.reduce((sum, item) => sum + item.quantity, 0);
-            
-            // Check bundle size constraints
-            if (variant.ranges && variant.ranges.length > 0) {
-                const range = variant.ranges[0];
-                const minRequired = range.quantity_min || 0;
-                const maxAllowed = range.quantity_max || Infinity;
-                
-                if (totalItems < minRequired) {
-                    errors.push(`Bundle must contain at least ${minRequired} items total. Currently: ${totalItems}`);
+            const totalSpend = selections.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+
+            logInfo('Validating bundle selections', {
+                totalItems,
+                totalSpend,
+                minimumSpend: CONFIG.minimumSpend,
+                enableSpendValidation: CONFIG.enableSpendValidation,
+                selectionsCount: selections.length
+            });
+
+            // Check spend-based constraints (primary validation)
+            if (CONFIG.enableSpendValidation) {
+                if (totalSpend < CONFIG.minimumSpend) {
+                    const remaining = CONFIG.minimumSpend - totalSpend;
+                    errors.push(`Bundle must total at least $${CONFIG.minimumSpend.toFixed(2)} ${CONFIG.currency}. Add $${remaining.toFixed(2)} more to continue.`);
+                    logInfo('Spend validation failed', { totalSpend, required: CONFIG.minimumSpend, remaining });
                 }
-                if (totalItems > maxAllowed && maxAllowed !== null) {
-                    errors.push(`Bundle cannot exceed ${maxAllowed} items total. Currently: ${totalItems}`);
+            } else {
+                // Fallback to item count validation if spend validation is disabled
+                if (variant.ranges && variant.ranges.length > 0) {
+                    const range = variant.ranges[0];
+                    const minRequired = range.quantity_min || 0;
+                    const maxAllowed = range.quantity_max || Infinity;
+
+                    if (totalItems < minRequired) {
+                        errors.push(`Bundle must contain at least ${minRequired} items total. Currently: ${totalItems}`);
+                    }
+                    if (totalItems > maxAllowed && maxAllowed !== null) {
+                        errors.push(`Bundle cannot exceed ${maxAllowed} items total. Currently: ${totalItems}`);
+                    }
                 }
             }
-            
-            // Check collection constraints
+
+            // Check collection constraints (always enforced)
             variant.collections.forEach((collection, index) => {
-                const collectionItems = selections.filter(item => 
+                const collectionItems = selections.filter(item =>
                     item.collectionId === collection.collectionId
                 );
                 const totalFromCollection = collectionItems.reduce((sum, item) => sum + item.quantity, 0);
-                
+                const spendFromCollection = collectionItems.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+
                 const minRequired = collection.quantityMin || 0;
                 const maxAllowed = collection.quantityMax || Infinity;
-                
+
+                logInfo(`Collection ${index + 1} validation`, {
+                    collectionId: collection.collectionId,
+                    totalFromCollection,
+                    spendFromCollection,
+                    minRequired,
+                    maxAllowed
+                });
+
                 if (minRequired > 0 && totalFromCollection < minRequired) {
                     errors.push(`Collection ${index + 1} requires at least ${minRequired} items. Currently: ${totalFromCollection}`);
                 }
@@ -1660,14 +1738,15 @@
                     errors.push(`Collection ${index + 1} cannot exceed ${maxAllowed} items. Currently: ${totalFromCollection}`);
                 }
             });
-            
+
+            logInfo('Validation completed', { errorsCount: errors.length, errors });
             return errors;
         }
 
         // Metafield processing functions
         function extractMetafieldValues(metafield) {
             if (!metafield) return [];
-            
+
             // Handle different metafield types
             if (metafield.type === 'list.metaobject_reference' && metafield.references?.nodes) {
                 const values = [];
@@ -1681,7 +1760,7 @@
                 });
                 return values.filter(Boolean);
             }
-            
+
             // Handle simple value types
             if (metafield.value) {
                 try {
@@ -1693,13 +1772,13 @@
                     return [metafield.value];
                 }
             }
-            
+
             return [];
         }
 
         function extractBadgeData(metafield) {
             if (!metafield) return [];
-            
+
             if (metafield.type === 'list.metaobject_reference' && metafield.references?.nodes) {
                 const badges = [];
                 metafield.references.nodes.forEach(node => {
@@ -1714,7 +1793,7 @@
                                 badge.textColor = field.value;
                             }
                         });
-                        
+
                         if (badge.label) {
                             // Set default colors if not provided
                             badge.background = badge.background || '#e74c3c';
@@ -1725,7 +1804,7 @@
                 });
                 return badges;
             }
-            
+
             // Handle simple badge values
             if (metafield.value) {
                 try {
@@ -1745,13 +1824,13 @@
                     }];
                 }
             }
-            
+
             return [];
         }
 
         function createProductPills(product) {
             const pills = [];
-            
+
             // Extract dietary preferences
             if (product.dietaryPreferences) {
                 const dietaryValues = extractMetafieldValues(product.dietaryPreferences);
@@ -1763,7 +1842,7 @@
                     });
                 });
             }
-            
+
             // Extract allergen information
             if (product.allergenInformation) {
                 const allergenValues = extractMetafieldValues(product.allergenInformation);
@@ -1775,7 +1854,7 @@
                     });
                 });
             }
-            
+
             return pills;
         }
 
@@ -1797,17 +1876,17 @@
             if (!pills || pills.length === 0) {
                 return '';
             }
-            
-            const pillsHTML = pills.map(pill => 
+
+            const pillsHTML = pills.map(pill =>
                 `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
             ).join('');
-            
+
             return `<div class="product-pills">${pillsHTML}</div>`;
         }
 
         // Get current quantity for a product
         function getCurrentQuantity(productId, variantId) {
-            const existingItem = bundleSelections.items.find(item => 
+            const existingItem = bundleSelections.items.find(item =>
                 item.productId === productId && item.variantId === variantId
             );
             return existingItem ? existingItem.quantity : 0;
@@ -1815,21 +1894,40 @@
 
         // Update item quantity
         function updateItemQuantity(productId, variantId, collectionId, change, productData) {
-            const existingItemIndex = bundleSelections.items.findIndex(item => 
+            const existingItemIndex = bundleSelections.items.findIndex(item =>
                 item.productId === productId && item.variantId === variantId
             );
-            
+
             let isNewItem = false;
             let isRemoving = false;
             let previousQuantity = 0;
-            
+            let previousSpend = bundleSelections.totalSpend;
+
+            logInfo('Updating item quantity', {
+                productTitle: productData.title,
+                productId,
+                variantId,
+                collectionId,
+                change,
+                existingItemIndex,
+                previousTotalItems: bundleSelections.totalItems,
+                previousTotalSpend: bundleSelections.totalSpend
+            });
+
             if (existingItemIndex >= 0) {
                 previousQuantity = bundleSelections.items[existingItemIndex].quantity;
                 bundleSelections.items[existingItemIndex].quantity += change;
-                
+
                 if (bundleSelections.items[existingItemIndex].quantity <= 0) {
                     bundleSelections.items.splice(existingItemIndex, 1);
                     isRemoving = true;
+                    logInfo('Item removed from bundle', { productTitle: productData.title, previousQuantity });
+                } else {
+                    logInfo('Item quantity updated', { 
+                        productTitle: productData.title, 
+                        oldQuantity: previousQuantity, 
+                        newQuantity: bundleSelections.items[existingItemIndex].quantity 
+                    });
                 }
             } else if (change > 0) {
                 bundleSelections.items.push({
@@ -1842,13 +1940,28 @@
                     currencyCode: productData.priceRange.minVariantPrice.currencyCode
                 });
                 isNewItem = true;
+                logInfo('New item added to bundle', { 
+                    productTitle: productData.title, 
+                    quantity: change, 
+                    price: productData.priceRange.minVariantPrice.amount 
+                });
             }
-            
+
             // Recalculate totals and validation
             bundleSelections.totalItems = bundleSelections.items.reduce((sum, item) => sum + item.quantity, 0);
+            bundleSelections.totalSpend = bundleSelections.items.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
             bundleSelections.errors = getValidationErrors(bundleSelections.items, bundleSelections.variant);
             bundleSelections.isValid = bundleSelections.errors.length === 0 && bundleSelections.totalItems > 0;
-            
+
+            // Log bundle state after update
+            logBundleState('Item quantity updated', {
+                productTitle: productData.title,
+                change,
+                isNewItem,
+                isRemoving,
+                spendChange: bundleSelections.totalSpend - previousSpend
+            });
+
             // Trigger animations and notifications
             if (change > 0) {
                 if (isNewItem) {
@@ -1867,10 +1980,10 @@
                     animateProductCard(productId, variantId, 'item-removed');
                 }
             }
-            
+
             // Animate bundle summary update
             animateBundleSummary();
-            
+
             updateProductQuantityDisplay(productId, variantId);
             updateBundleSummary();
         }
@@ -1879,19 +1992,19 @@
         function updateProductQuantityDisplay(productId, variantId) {
             const currentQty = getCurrentQuantity(productId, variantId);
             const productElements = document.querySelectorAll(`[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
-            
+
             productElements.forEach(element => {
                 const quantityDisplay = element.querySelector('.quantity-display');
                 if (quantityDisplay) {
                     quantityDisplay.textContent = currentQty;
-                    
+
                     // Animate quantity change
                     quantityDisplay.classList.add('updated');
                     setTimeout(() => {
                         quantityDisplay.classList.remove('updated');
                     }, 400);
                 }
-                
+
                 const minusButton = element.querySelector('.quantity-btn-minus');
                 if (minusButton) {
                     minusButton.disabled = currentQty <= 0;
@@ -1903,23 +2016,51 @@
             const summaryContent = document.getElementById('summaryContent');
             const validationMessages = document.getElementById('validationMessages');
             const addToCartBtn = document.getElementById('addToCartBtn');
-            
+
             if (bundleSelections.items.length === 0) {
+                // Show initial state with spend requirement
+                const progressBarHTML = CONFIG.enableSpendValidation ? `
+                    <div style="margin: 20px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 600; color: #2c3e50;">Minimum Spend</span>
+                            <span style="font-weight: 600; color: #e74c3c;">$0.00 / $${CONFIG.minimumSpend.toFixed(2)}</span>
+                        </div>
+                        <div style="background: #e9ecef; border-radius: 10px; height: 12px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #e74c3c, #e74c3c); height: 100%; width: 0%; transition: all 0.3s ease;"></div>
+                        </div>
+                    </div>
+                ` : '';
+                
                 summaryContent.innerHTML = `
                     <div class="animate-fade-in-up" style="color: #6c757d; text-align: center; padding: 20px 0;">
-                        🛒 Start adding items to see your bundle summary
+                        🛒 Start adding items to build your bundle
                     </div>
+                    ${progressBarHTML}
                 `;
                 validationMessages.innerHTML = '';
                 addToCartBtn.disabled = true;
                 return;
             }
-            
-            // Display selected items
-            const totalPrice = bundleSelections.items.reduce((sum, item) => 
+
+            // Calculate spend progress
+            const totalPrice = bundleSelections.items.reduce((sum, item) =>
                 sum + (parseFloat(item.price) * item.quantity), 0
             );
-            
+            bundleSelections.totalSpend = totalPrice;
+
+            // Progress calculation for visual feedback
+            const spendProgress = CONFIG.enableSpendValidation ? Math.min((totalPrice / CONFIG.minimumSpend) * 100, 100) : 100;
+            const isSpendMet = totalPrice >= CONFIG.minimumSpend;
+            const remaining = CONFIG.minimumSpend - totalPrice;
+
+            logInfo('Bundle summary updated', {
+                totalPrice,
+                spendProgress: spendProgress.toFixed(2),
+                isSpendMet,
+                remaining: remaining.toFixed(2)
+            });
+
+            // Display selected items
             const itemsHTML = bundleSelections.items.map((item, index) => `
                 <div class="selected-item animate-slide-in" style="animation-delay: ${index * 0.1}s">
                     <div class="item-info">
@@ -1930,8 +2071,27 @@
                 </div>
             `).join('');
 
+            // Progress bar for spend requirement
+            const progressBarHTML = CONFIG.enableSpendValidation ? `
+                <div style="margin: 15px 0; padding: 15px; background: ${isSpendMet ? '#f0fff4' : '#fff5f5'}; border-radius: 8px; border: 2px solid ${isSpendMet ? '#9ae6b4' : '#fed7d7'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #2c3e50;">
+                            ${isSpendMet ? '✅ Minimum Spend Met' : '💰 Minimum Spend Required'}
+                        </span>
+                        <span style="font-weight: 600; color: ${isSpendMet ? '#28a745' : '#e74c3c'};">
+                            $${totalPrice.toFixed(2)} / $${CONFIG.minimumSpend.toFixed(2)}
+                        </span>
+                    </div>
+                    <div style="background: #e9ecef; border-radius: 10px; height: 12px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, ${isSpendMet ? '#28a745' : '#ffc107'}, ${isSpendMet ? '#20c997' : '#fd7e14'}); height: 100%; width: ${spendProgress}%; transition: all 0.3s ease;"></div>
+                    </div>
+                    ${!isSpendMet ? `<div style="color: #666; font-size: 0.9rem; margin-top: 6px; text-align: center;">Add $${remaining.toFixed(2)} more to enable checkout</div>` : ''}
+                </div>
+            ` : '';
+
             summaryContent.innerHTML = `
                 ${itemsHTML}
+                ${progressBarHTML}
                 <div class="bundle-total animate-fade-in-up" style="animation-delay: ${bundleSelections.items.length * 0.1}s">
                     <div class="total-line">
                         <span>Total Items:</span>
@@ -1939,30 +2099,33 @@
                     </div>
                     <div class="total-line final-total">
                         <span>Total Price:</span>
-                        <span>$${totalPrice.toFixed(2)} ${bundleSelections.items[0]?.currencyCode || 'USD'}</span>
+                        <span>$${totalPrice.toFixed(2)} ${bundleSelections.items[0]?.currencyCode || CONFIG.currency}</span>
                     </div>
                 </div>
             `;
-            
+
             // Display validation messages with animation
             if (bundleSelections.errors.length > 0) {
-                validationMessages.innerHTML = bundleSelections.errors.map(error => 
+                validationMessages.innerHTML = bundleSelections.errors.map(error =>
                     `<div class="validation-error animate-fade-in-up">${error}</div>`
                 ).join('');
-            } else if (bundleSelections.totalItems > 0) {
+            } else if (bundleSelections.totalItems > 0 && bundleSelections.isValid) {
                 validationMessages.innerHTML = '<div class="validation-success animate-bounce-in">✅ Bundle is complete and ready to add to cart!</div>';
             } else {
                 validationMessages.innerHTML = '';
             }
-            
+
             // Update add to cart button with animation
-            if (bundleSelections.isValid && addToCartBtn.disabled) {
+            const wasDisabled = addToCartBtn.disabled;
+            addToCartBtn.disabled = !bundleSelections.isValid;
+            
+            if (bundleSelections.isValid && wasDisabled) {
                 addToCartBtn.classList.add('animate-bounce-in');
+                logInfo('Add to cart button enabled - bundle meets all requirements');
                 setTimeout(() => {
                     addToCartBtn.classList.remove('animate-bounce-in');
                 }, 600);
             }
-            addToCartBtn.disabled = !bundleSelections.isValid;
         }
 
         // Render product card
@@ -1971,10 +2134,10 @@
             const productId = productData.id;
             const variantId = productData.variants.edges[0]?.node?.id || '';
             const currentQuantity = getCurrentQuantity(productId, variantId);
-            
+
             // Store product data for later use
             productDataCache.set(productId, productData);
-            
+
             const imageUrl = productData.images.edges[0]?.node?.url || '';
             const altText = productData.images.edges[0]?.node?.altText || productData.title;
             const price = productData.priceRange.minVariantPrice.amount;
@@ -1997,11 +2160,11 @@
                         ${pillsHTML}
                         <div class="product-price">$${parseFloat(price).toFixed(2)} ${currencyCode}</div>
                         <div class="quantity-controls">
-                            <button class="quantity-btn quantity-btn-minus" 
+                            <button class="quantity-btn quantity-btn-minus"
                                     onclick="updateQuantity('${productId}', '${variantId}', '${collectionId}', -1)"
                                     ${currentQuantity <= 0 ? 'disabled' : ''}>-</button>
                             <span class="quantity-display">${currentQuantity}</span>
-                            <button class="quantity-btn quantity-btn-plus" 
+                            <button class="quantity-btn quantity-btn-plus"
                                     onclick="updateQuantity('${productId}', '${variantId}', '${collectionId}', 1)">+</button>
                         </div>
                     </div>
@@ -2022,30 +2185,30 @@
             const collectionLoading = document.getElementById('collectionLoading');
             const productsGrid = document.getElementById('productsGrid');
             const emptyState = document.getElementById('emptyState');
-            
+
             // Show loading state
             collectionLoading.classList.remove('hidden');
             productsGrid.innerHTML = '';
             emptyState.classList.add('hidden');
-            
+
             try {
                 const collection = await fetchAllProductsFromCollection(collectionId);
-                
+
                 if (!collection || !collection.products || collection.products.edges.length === 0) {
                     // Show empty state
                     collectionLoading.classList.add('hidden');
                     emptyState.classList.remove('hidden');
                     return;
                 }
-                
+
                 // Render products
                 const productsHTML = collection.products.edges
                     .filter(product => product.node.variants.edges.length > 0) // Only products with variants
                     .map(product => renderProductCard(product, collectionId))
                     .join('');
-                
+
                 productsGrid.innerHTML = productsHTML;
-                
+
                 // Update existing quantity displays
                 collection.products.edges.forEach(product => {
                     const productId = product.node.id;
@@ -2054,7 +2217,7 @@
                         updateProductQuantityDisplay(productId, variantId);
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Error loading collection products:', error);
                 emptyState.querySelector('h3').textContent = 'Error loading products';
@@ -2068,15 +2231,15 @@
         // Setup collection navigation
         async function setupCollectionNavigation(variant) {
             const collectionsNav = document.getElementById('collectionsNav');
-            
+
             if (!variant.collections || variant.collections.length === 0) {
                 collectionsNav.innerHTML = '<p>No collections available for this variant.</p>';
                 return;
             }
-            
+
             // Show loading state for navigation
             collectionsNav.innerHTML = '<div class="collection-loading"><div class="mini-spinner"></div><p>Loading collections...</p></div>';
-            
+
             try {
                 // Fetch collection names for all collections
                 const collectionPromises = variant.collections.map(async (collection) => {
@@ -2087,39 +2250,39 @@
                         handle: collectionData?.handle || ''
                     };
                 });
-                
+
                 const collectionsWithNames = await Promise.all(collectionPromises);
-                
+
                 const collectionsHTML = collectionsWithNames.map((collection, index) => {
                     const isFirst = index === 0;
                     const constraintsText = [];
                     if (collection.quantityMin) constraintsText.push(`min: ${collection.quantityMin}`);
                     if (collection.quantityMax) constraintsText.push(`max: ${collection.quantityMax}`);
                     const constraintsDisplay = constraintsText.length > 0 ? ` (${constraintsText.join(', ')})` : '';
-                    
+
                     return `
-                        <div class="collection-tab ${isFirst ? 'active' : ''}" 
+                        <div class="collection-tab ${isFirst ? 'active' : ''}"
                              onclick="selectCollection('${collection.collectionId}', this, ${index}, '${collection.title}')">
                             ${collection.title}${constraintsDisplay}
                         </div>
                     `;
                 }).join('');
-                
+
                 collectionsNav.innerHTML = collectionsHTML;
-                
+
                 // Load first collection by default
                 if (collectionsWithNames.length > 0) {
                     displayCollectionProducts(collectionsWithNames[0].collectionId, collectionsWithNames[0].title);
                 }
-                
+
             } catch (error) {
                 console.error('Error loading collection names:', error);
-                
+
                 // Fallback to generic names
                 const collectionsHTML = variant.collections.map((collection, index) => {
                     const isFirst = index === 0;
                     return `
-                        <div class="collection-tab ${isFirst ? 'active' : ''}" 
+                        <div class="collection-tab ${isFirst ? 'active' : ''}"
                              onclick="selectCollection('${collection.collectionId}', this, ${index}, 'Collection ${index + 1}')">
                             Collection ${index + 1}
                             ${collection.quantityMin ? ` (min: ${collection.quantityMin})` : ''}
@@ -2127,9 +2290,9 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 collectionsNav.innerHTML = collectionsHTML;
-                
+
                 if (variant.collections.length > 0) {
                     displayCollectionProducts(variant.collections[0].collectionId, 'Collection 1');
                 }
@@ -2143,43 +2306,38 @@
             setTimeout(() => {
                 tabElement.classList.remove('switching');
             }, 300);
-            
+
             // Update tab states
             document.querySelectorAll('.collection-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             tabElement.classList.add('active');
-            
+
             // Show notification for collection switch
             showBundleNotification(`Browsing ${collectionTitle || `Collection ${index + 1}`} 📂`, '📂');
-            
+
             // Load collection products
             displayCollectionProducts(collectionId, collectionTitle || `Collection ${index + 1}`);
         };
 
-        // Setup bundle variant picker
-        function populateBundleVariantPicker(variantCollections) {
-            const select = document.getElementById('bundleVariantSelect');
+        // Initialize bundle with single variant (no picker needed)
+        function initializeBundleVariant(variantCollections) {
+            if (!variantCollections || variantCollections.length === 0) {
+                logError('No bundle variants available');
+                throw new Error('No bundle variants found');
+            }
+
+            // Find the first enabled variant (should be the only one)
+            const variant = variantCollections.find(v => v.enabled) || variantCollections[0];
             
-            variantCollections.forEach(variant => {
-                if (variant.enabled) {
-                    const option = document.createElement('option');
-                    option.value = variant.externalVariantId;
-                    
-                    // Create descriptive text for the variant
-                    const rangeText = variant.ranges && variant.ranges.length > 0 
-                        ? (() => {
-                            const range = variant.ranges[0];
-                            const min = range.quantity_min || 0;
-                            const max = range.quantity_max || '∞';
-                            return `${min}-${max} items`;
-                        })()
-                        : `${variant.itemsCount} items`;
-                    
-                    option.textContent = `Bundle Size: ${rangeText}`;
-                    select.appendChild(option);
-                }
+            logInfo('Auto-selecting bundle variant', {
+                variantId: variant.externalVariantId,
+                enabled: variant.enabled,
+                collectionsCount: variant.collections.length,
+                ranges: variant.ranges
             });
+
+            return variant;
         }
 
         // Show bundle notification
@@ -2187,12 +2345,12 @@
             const notification = document.getElementById('bundleNotification');
             const iconElement = notification.querySelector('.notification-icon');
             const textElement = notification.querySelector('.notification-text');
-            
+
             iconElement.textContent = icon;
             textElement.textContent = message;
-            
+
             notification.classList.add('show');
-            
+
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
@@ -2203,7 +2361,7 @@
             const productCard = document.querySelector(`[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
             if (productCard) {
                 productCard.classList.add(animationType);
-                
+
                 setTimeout(() => {
                     productCard.classList.remove(animationType);
                 }, 600);
@@ -2215,7 +2373,7 @@
             const bundleSummary = document.querySelector('.bundle-summary');
             if (bundleSummary) {
                 bundleSummary.classList.add('updating');
-                
+
                 setTimeout(() => {
                     bundleSummary.classList.remove('updating');
                 }, 200);
@@ -2239,17 +2397,17 @@
 
             // Populate modal content
             populateModalContent(productData, productId, variantId, collectionId);
-            
+
             // Show modal with animation
             const modal = document.getElementById('productModal');
             modal.classList.add('active');
-            
+
             // Prevent body scroll
             document.body.style.overflow = 'hidden';
-            
+
             // Add keyboard support
             document.addEventListener('keydown', handleModalKeydown);
-            
+
             // Show notification
             showBundleNotification(`Viewing ${productData.title} details 👁️`, '👁️');
         }
@@ -2257,13 +2415,13 @@
         function closeProductModal() {
             const modal = document.getElementById('productModal');
             modal.classList.remove('active');
-            
+
             // Restore body scroll
             document.body.style.overflow = '';
-            
+
             // Remove keyboard support
             document.removeEventListener('keydown', handleModalKeydown);
-            
+
             currentModalProduct = null;
             currentModalCollectionId = null;
         }
@@ -2297,7 +2455,7 @@
             const thumbnailsContainer = document.getElementById('modalThumbnails');
             if (productData.images.edges.length > 1) {
                 const thumbnailsHTML = productData.images.edges.map((image, index) => `
-                    <div class="modal-thumbnail ${index === 0 ? 'active' : ''}" 
+                    <div class="modal-thumbnail ${index === 0 ? 'active' : ''}"
                          onclick="switchModalImage('${image.node.url}', '${image.node.altText || productData.title}', this)">
                         <img src="${image.node.url}" alt="${image.node.altText || productData.title}">
                     </div>
@@ -2320,7 +2478,7 @@
             const dietarySection = document.getElementById('modalDietarySection');
             const dietaryPillsContainer = document.getElementById('modalDietaryPills');
             if (dietaryPills.length > 0) {
-                dietaryPillsContainer.innerHTML = dietaryPills.map(pill => 
+                dietaryPillsContainer.innerHTML = dietaryPills.map(pill =>
                     `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
                 ).join('');
                 dietarySection.style.display = 'block';
@@ -2332,7 +2490,7 @@
             const allergenSection = document.getElementById('modalAllergenSection');
             const allergenPillsContainer = document.getElementById('modalAllergenPills');
             if (allergenPills.length > 0) {
-                allergenPillsContainer.innerHTML = allergenPills.map(pill => 
+                allergenPillsContainer.innerHTML = allergenPills.map(pill =>
                     `<span class="pill ${pill.type} ${pill.cssClass}">${pill.text}</span>`
                 ).join('');
                 allergenSection.style.display = 'block';
@@ -2343,7 +2501,7 @@
             // Set current quantity
             const currentQuantity = getCurrentQuantity(productId, variantId);
             document.getElementById('modalQuantityDisplay').textContent = currentQuantity;
-            
+
             // Update minus button state
             document.getElementById('modalMinusBtn').disabled = currentQuantity <= 0;
 
@@ -2373,7 +2531,7 @@
             const newMinusBtn = minusBtn.cloneNode(true);
             const newPlusBtn = plusBtn.cloneNode(true);
             const newAddToBundleBtn = addToBundleBtn.cloneNode(true);
-            
+
             minusBtn.parentNode.replaceChild(newMinusBtn, minusBtn);
             plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
             addToBundleBtn.parentNode.replaceChild(newAddToBundleBtn, addToBundleBtn);
@@ -2399,13 +2557,13 @@
             const currentQuantity = getCurrentQuantity(productId, variantId);
             const quantityDisplay = document.getElementById('modalQuantityDisplay');
             const minusBtn = document.getElementById('modalMinusBtn');
-            
+
             quantityDisplay.textContent = currentQuantity;
             quantityDisplay.classList.add('updated');
             setTimeout(() => {
                 quantityDisplay.classList.remove('updated');
             }, 400);
-            
+
             minusBtn.disabled = currentQuantity <= 0;
         }
 
@@ -2414,51 +2572,55 @@
         window.closeProductModal = closeProductModal;
         window.switchModalImage = switchModalImage;
 
-        // Handle variant selection
-        async function handleVariantSelection(variantId) {
-            const variant = variantCollections.find(v => v.externalVariantId === variantId);
-            if (!variant) return;
-            
+        // Initialize bundle with the single variant
+        async function initializeBundleContent(variant) {
+            if (!variant) {
+                logError('No variant provided for bundle initialization');
+                return;
+            }
+
+            logInfo('Initializing bundle content', {
+                variantId: variant.externalVariantId,
+                collectionsCount: variant.collections.length
+            });
+
             // Reset bundle selections
             bundleSelections = {
-                variantId: variantId,
+                variantId: variant.externalVariantId,
                 variant: variant,
                 items: [],
                 totalItems: 0,
+                totalSpend: 0,
                 isValid: false,
                 errors: []
             };
-            
+
             currentVariant = variant;
-            
-            // Update UI with animations
+
+            // Initialize UI
             setupCollectionNavigation(variant);
             updateBundleSummary();
-            
-            // Show bundle content with animation
+
+            // Show bundle content immediately (no animation needed since there's no transition)
             const bundleContent = document.getElementById('bundleContent');
             bundleContent.classList.remove('hidden');
-            bundleContent.classList.add('animate-fade-in-up');
-            
-            // Show success notification
-            showBundleNotification('Bundle size selected! Start adding items 🎯', '🎯');
+
+            logBundleState('Bundle initialized with single variant');
         }
 
         // Setup event listeners
         function setupEventListeners() {
-            // Variant selector
-            document.getElementById('bundleVariantSelect').addEventListener('change', (e) => {
-                if (e.target.value) {
-                    handleVariantSelection(e.target.value);
-                } else {
-                    document.getElementById('bundleContent').classList.add('hidden');
-                }
-            });
-            
             // Add to cart button
             document.getElementById('addToCartBtn').addEventListener('click', () => {
+                logInfo('Add to cart button clicked', {
+                    isValid: bundleSelections.isValid,
+                    totalSpend: bundleSelections.totalSpend,
+                    totalItems: bundleSelections.totalItems
+                });
                 addBundleToCart(bundleSelections);
             });
+
+            logInfo('Event listeners initialized');
         }
 
         // Cart functionality
@@ -2480,13 +2642,42 @@
                 }))
             };
 
+            logInfo('Bundle converted to Recharge format', {
+                bundleProductId: bundleProductData.productId,
+                bundleVariantId: bundleProductData.variantId,
+                selectionsCount: bundle.selections.length,
+                totalQuantity: bundle.selections.reduce((sum, s) => sum + s.quantity, 0)
+            });
+
             return { bundle, bundleProductData };
         }
 
         async function getRechargeCartItems(bundleSelections) {
+            logInfo('Getting Recharge cart items', {
+                bundleId: CONFIG.bundleProductId,
+                totalSpend: bundleSelections.totalSpend,
+                totalItems: bundleSelections.totalItems
+            });
+
             const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
-            const cartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
-            return cartItems;
+            
+            try {
+                const cartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
+                
+                logInfo('Recharge cart items generated successfully', {
+                    cartItemsCount: cartItems.length,
+                    cartItems: cartItems.map(item => ({
+                        id: item.id,
+                        quantity: item.quantity,
+                        properties: Object.keys(item.properties || {})
+                    }))
+                });
+
+                return cartItems;
+            } catch (error) {
+                logError('Failed to get Recharge cart items', error);
+                throw error;
+            }
         }
 
         function convertRechargeItemsToGraphQL(rechargeCartItems) {
@@ -2501,15 +2692,24 @@
         }
 
         async function addBundleToCartGraphQL(bundleSelections) {
+            logInfo('Starting GraphQL cart creation', {
+                method: 'GraphQL Storefront API',
+                totalSpend: bundleSelections.totalSpend,
+                totalItems: bundleSelections.totalItems,
+                itemsCount: bundleSelections.items.length
+            });
+
             try {
-                console.log('🛒 Adding bundle to cart via GraphQL...', bundleSelections);
-                
                 const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
                 const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
-                console.log('🔧 Recharge cart items:', rechargeCartItems);
                 
+                logInfo('Recharge cart items retrieved for GraphQL', {
+                    rechargeItemsCount: rechargeCartItems.length,
+                    rechargeItems: rechargeCartItems.map(item => ({ id: item.id, quantity: item.quantity }))
+                });
+
                 const cartLines = convertRechargeItemsToGraphQL(rechargeCartItems);
-                
+
                 const cartCreateMutation = `
                     mutation cartCreate($input: CartInput!) {
                         cartCreate(input: $input) {
@@ -2551,7 +2751,11 @@
                         }
                     }
                 `;
-                
+
+                logInfo('Executing GraphQL cart creation mutation', {
+                    cartLinesCount: cartLines.length
+                });
+
                 const response = await shopifyClient.request(cartCreateMutation, {
                     variables: {
                         input: {
@@ -2559,95 +2763,153 @@
                         }
                     }
                 });
-                
+
                 if (response.data?.cartCreate?.userErrors?.length > 0) {
-                    throw new Error('Cart creation failed: ' + response.data.cartCreate.userErrors.map(e => e.message).join(', '));
+                    const errorMessage = response.data.cartCreate.userErrors.map(e => e.message).join(', ');
+                    logError('GraphQL cart creation failed with user errors', {
+                        userErrors: response.data.cartCreate.userErrors
+                    });
+                    throw new Error('Cart creation failed: ' + errorMessage);
                 }
-                
+
                 const cart = response.data?.cartCreate?.cart;
                 if (!cart) {
+                    logError('GraphQL cart creation failed - no cart returned');
                     throw new Error('Failed to create cart');
                 }
-                
-                console.log('✅ Bundle added to cart successfully:', {
+
+                logInfo('GraphQL cart created successfully', {
                     cartId: cart.id,
                     checkoutUrl: cart.checkoutUrl,
                     totalCost: cart.estimatedCost?.totalAmount?.amount,
-                    itemCount: cart.lines.edges.length
+                    totalCurrency: cart.estimatedCost?.totalAmount?.currencyCode,
+                    cartItemCount: cart.lines.edges.length
                 });
-                
+
                 // Redirect to checkout
+                logInfo('Redirecting to checkout', { checkoutUrl: cart.checkoutUrl });
                 window.location.href = cart.checkoutUrl;
-                
+
                 return cart;
-                
+
             } catch (error) {
-                console.error('❌ Error adding bundle to cart:', error);
+                logError('GraphQL cart creation failed', error);
                 alert('Failed to add bundle to cart. Please try again.');
                 throw error;
             }
         }
 
         async function addBundleToCartAjax(bundleSelections) {
+            logInfo('Starting Ajax cart creation', {
+                method: 'Shopify Ajax Cart API',
+                totalSpend: bundleSelections.totalSpend,
+                totalItems: bundleSelections.totalItems,
+                itemsCount: bundleSelections.items.length
+            });
+
             try {
-                console.log('🛒 Adding bundle to cart via Ajax...', bundleSelections);
-                
                 const { bundle, bundleProductData } = convertToRechargeBundleFormat(bundleSelections);
                 const rechargeCartItems = await recharge.bundle.getDynamicBundleItems(bundle, bundleProductData.handle);
-                console.log('🔧 Recharge cart items:', rechargeCartItems);
                 
+                logInfo('Recharge cart items retrieved for Ajax', {
+                    rechargeItemsCount: rechargeCartItems.length,
+                    rechargeItems: rechargeCartItems.map(item => ({ id: item.id, quantity: item.quantity }))
+                });
+
                 const cartData = { items: rechargeCartItems };
-                
-                const response = await fetch(window.Shopify.routes.root + 'cart/add.js', {
+                const cartUrl = window.Shopify.routes.root + 'cart/add.js';
+
+                logInfo('Sending Ajax cart request', {
+                    url: cartUrl,
+                    itemsCount: rechargeCartItems.length
+                });
+
+                const response = await fetch(cartUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cartData),
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || errorData.description || 'Failed to add to cart');
+                    const errorMessage = errorData.message || errorData.description || 'Failed to add to cart';
+                    logError('Ajax cart creation failed', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData
+                    });
+                    throw new Error(errorMessage);
                 }
-                
+
                 const result = await response.json();
-                console.log('✅ Bundle added to cart successfully:', result);
                 
+                logInfo('Ajax cart created successfully', {
+                    resultType: typeof result,
+                    hasItems: Array.isArray(result.items),
+                    itemCount: result.items ? result.items.length : 'unknown'
+                });
+
                 // Redirect to cart page
+                logInfo('Redirecting to cart page');
                 window.location.href = '/cart';
-                
+
                 return result;
-                
+
             } catch (error) {
-                console.error('❌ Error adding bundle to cart:', error);
+                logError('Ajax cart creation failed', error);
                 alert('Failed to add bundle to cart. Please try again.');
                 throw error;
             }
         }
 
         function isShopifyOnlineStore() {
-            return typeof window !== 'undefined' && 
-                   window.Shopify && 
+            return typeof window !== 'undefined' &&
+                   window.Shopify &&
                    window.Shopify.routes;
         }
 
         async function addBundleToCart(bundleSelections) {
+            logInfo('Add to cart initiated', {
+                isValid: bundleSelections.isValid,
+                totalSpend: bundleSelections.totalSpend,
+                totalItems: bundleSelections.totalItems,
+                minimumSpend: CONFIG.minimumSpend,
+                errorsCount: bundleSelections.errors.length
+            });
+
             if (!bundleSelections.isValid) {
+                logWarning('Add to cart blocked - bundle validation failed', {
+                    errors: bundleSelections.errors,
+                    totalSpend: bundleSelections.totalSpend,
+                    minimumSpend: CONFIG.minimumSpend
+                });
                 alert('Please complete your bundle selection before adding to cart.');
                 return;
             }
-            
+
             const addToCartBtn = document.getElementById('addToCartBtn');
             const originalText = addToCartBtn.textContent;
             addToCartBtn.disabled = true;
             addToCartBtn.textContent = 'Adding to Cart...';
-            
+
+            // Detect cart method
+            const isOnlineStore = isShopifyOnlineStore();
+            logInfo('Cart method detected', {
+                method: isOnlineStore ? 'Ajax Cart API' : 'GraphQL Storefront API',
+                hasShopifyRoutes: !!window.Shopify?.routes
+            });
+
             try {
-                if (isShopifyOnlineStore()) {
+                if (isOnlineStore) {
                     await addBundleToCartAjax(bundleSelections);
                 } else {
                     await addBundleToCartGraphQL(bundleSelections);
                 }
             } catch (error) {
+                logError('Add to cart failed', {
+                    method: isOnlineStore ? 'Ajax' : 'GraphQL',
+                    error: error.message
+                });
                 addToCartBtn.disabled = false;
                 addToCartBtn.textContent = originalText;
             }
@@ -2655,56 +2917,66 @@
 
         // Main initialization function
         async function initializeBundleWidget() {
+            logInfo('Bundle widget initialization started', {
+                storeIdentifier: CONFIG.storeIdentifier,
+                bundleProductId: CONFIG.bundleProductId,
+                minimumSpend: CONFIG.minimumSpend,
+                enableSpendValidation: CONFIG.enableSpendValidation,
+                enableDetailedLogging: CONFIG.enableDetailedLogging
+            });
+
             try {
-                console.log('🚀 Initializing bundle widget...');
-                
                 // Initialize clients
+                logInfo('Initializing Shopify and Recharge clients');
                 initializeShopifyClient();
+                
                 await recharge.init({
                     storeIdentifier: CONFIG.storeIdentifier,
                     appName: CONFIG.appName,
                     appVersion: CONFIG.appVersion
                 });
-                
+
+                logInfo('Recharge SDK initialized successfully');
+
                 // Load bundle settings
-                console.log('📦 Loading bundle settings...');
+                logInfo('Loading bundle settings from Recharge CDN', {
+                    bundleProductId: CONFIG.bundleProductId
+                });
+                
                 bundleSettings = await recharge.cdn.getCDNBundleSettings(CONFIG.bundleProductId);
                 variantCollections = getVariantCollections(bundleSettings);
-                
-                console.log('✅ Bundle settings loaded:', {
+
+                logInfo('Bundle settings loaded successfully', {
                     bundleId: CONFIG.bundleProductId,
                     variantsCount: variantCollections.length,
+                    enabledVariants: variantCollections.filter(v => v.enabled).length,
                     variants: variantCollections.map(v => ({
                         id: v.externalVariantId,
                         enabled: v.enabled,
-                        collectionsCount: v.collections.length
+                        collectionsCount: v.collections.length,
+                        hasRanges: !!(v.ranges && v.ranges.length > 0)
                     }))
                 });
-                
-                // Setup UI
-                populateBundleVariantPicker(variantCollections);
+
+                // Initialize with single variant
+                const selectedVariant = initializeBundleVariant(variantCollections);
                 setupEventListeners();
-                
-                // Auto-select first variant
-                if (variantCollections.length > 0) {
-                    const firstVariant = variantCollections[0];
-                    // Set the select value
-                    const select = document.getElementById('bundleVariantSelect');
-                    select.value = firstVariant.externalVariantId;
-                    
-                    // Trigger variant selection
-                    await handleVariantSelection(firstVariant.externalVariantId);
-                }
-                
+
+                // Initialize bundle content with the single variant
+                await initializeBundleContent(selectedVariant);
+
                 // Hide loading and show widget
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('bundleWidget').classList.remove('hidden');
-                
-                console.log('✅ Bundle widget initialized successfully');
-                
+
+                logInfo('Bundle widget initialization completed successfully', {
+                    selectedVariantId: selectedVariant.externalVariantId,
+                    collectionsCount: selectedVariant.collections.length
+                });
+
             } catch (error) {
-                console.error('❌ Error initializing bundle widget:', error);
-                
+                logError('Bundle widget initialization failed', error);
+
                 // Show error state
                 const loadingState = document.getElementById('loadingState');
                 loadingState.innerHTML = `
